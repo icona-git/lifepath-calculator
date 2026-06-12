@@ -47,13 +47,13 @@ sudo -u lifepath bash -c 'ssh-keyscan github.com >> /var/www/lifepath/.ssh/known
 sudo -u lifepath git clone git@github.com:icona-git/lifepath-calculator.git /var/www/lifepath/app
 ```
 
-Then:
+Then — absolute paths only; do NOT `cd` into the app dir as your admin user (the 750 home blocks
+traversal, the `cd` fails, and everything after runs in the wrong directory):
 ```bash
-cd /var/www/lifepath/app
-sudo -u lifepath python3 -m venv .venv
-sudo -u lifepath .venv/bin/pip install --upgrade pip
-sudo -u lifepath .venv/bin/pip install -r requirements.txt
-sudo -u lifepath .venv/bin/python -c "import app; r = app.compute_results(app.SAMPLE_PROFILE); print('engine OK:', r['targets']['gross_mid'])"
+sudo -u lifepath python3 -m venv /var/www/lifepath/app/.venv
+sudo -u lifepath /var/www/lifepath/app/.venv/bin/pip install --upgrade pip
+sudo -u lifepath /var/www/lifepath/app/.venv/bin/pip install -r /var/www/lifepath/app/requirements.txt
+sudo -u lifepath bash -c "cd /var/www/lifepath/app && .venv/bin/python -c 'import app; print(\"engine OK:\", app.compute_results(app.SAMPLE_PROFILE)[\"targets\"][\"gross_mid\"])'"
 ```
 
 ## 3. Hardened systemd service
@@ -182,15 +182,14 @@ applying) and one demo persona runs end to end.
 ## 8. Updates (each deploy)
 
 ```bash
-cd /var/www/lifepath/app
-sudo -u lifepath git rev-parse --short HEAD      # rollback point
-sudo -u lifepath git pull
-sudo -u lifepath .venv/bin/pip install -r requirements.txt --quiet
+sudo -u lifepath git -C /var/www/lifepath/app rev-parse --short HEAD      # rollback point
+sudo -u lifepath git -C /var/www/lifepath/app pull
+sudo -u lifepath /var/www/lifepath/app/.venv/bin/pip install -r /var/www/lifepath/app/requirements.txt --quiet
 sudo systemctl restart lifepath
 curl -s -o /dev/null -w "HTTP %{http_code}\n" https://life.appi.ca/
 ```
 
-**Rollback:** `sudo -u lifepath git checkout <old-sha> && sudo systemctl restart lifepath`
+**Rollback:** `sudo -u lifepath git -C /var/www/lifepath/app checkout <old-sha> && sudo systemctl restart lifepath`
 
 ## Optional extras
 
