@@ -1,5 +1,6 @@
 {
   "age_ranges": ["16-19", "20-24", "25-29", "30-34", "35-44", "45-54", "55+"],
+  "alberta_cities": ["Calgary", "Edmonton", "Red Deer", "Lethbridge", "Medicine Hat", "Fort McMurray", "Grande Prairie", "Smaller town / rural Alberta", "Outside Alberta / other"],
   "housing_now": ["Living with family", "Renting - shared with roommates", "Renting - own place", "Own my home", "Other"],
   "education_levels": ["High school or less", "Some post-secondary", "Certificate or diploma", "Trade ticket / apprenticeship", "Bachelor's degree", "Graduate degree"],
   "work_status": ["Working full-time", "Working part-time", "Gig / contract work", "Student", "Between jobs", "Caregiving / other"],

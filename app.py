@@ -93,39 +93,48 @@ def esc(text):
 # Engine: budget
 # --------------------------------------------------------------------------
 
+def city_costs(p):
+    """Cost pack for the user's target city; unknown cities fall back to Calgary baseline."""
+    C = costs()
+    key = p.get("target_city") or "Calgary"
+    return key, C["cities"].get(key, C["cities"]["Calgary"])
+
+
 def compute_budget(p):
     """Monthly budget line items + totals (with a deliberate low/high range)."""
     C = costs()
     O = options()
     level = O["lifestyle_levels"][p["lifestyle_level"]]
     housing_tier = p["housing_tier"]
+    city_key, city = city_costs(p)
+    fac = city["everyday_factor"]
 
-    housing = C["housing"][housing_tier]["monthly"]
+    housing = city["housing"][housing_tier]
     vehicle = C["vehicle"][p["vehicle_tier"]]["monthly"]
-    food = C["food"][level["food"]]
+    food = int(round(C["food"][level["food"]] * fac))
 
     if housing_tier == "family_support":
         utilities = 0
         utilities_note = "Assumed included in family contribution"
     elif housing_tier == "shared":
-        utilities = C["utilities"]["shared_or_basic"]
+        utilities = int(round(C["utilities"]["shared_or_basic"] * fac))
         utilities_note = "Split with roommates"
     else:
-        utilities = C["utilities"][level["utilities"]]
+        utilities = int(round(C["utilities"][level["utilities"]] * fac))
         utilities_note = ""
 
     phone = C["phone"][level["phone"]]
     internet = C["internet"]["shared"] if housing_tier in ("family_support", "shared") else C["internet"]["standard"]
     tenant_ins = 0 if housing_tier == "family_support" else C["tenant_insurance"]["renting"]
-    health = C["health_personal"][level["health"]]
-    lifestyle = C["lifestyle"][level["lifestyle"]]
+    health = int(round(C["health_personal"][level["health"]] * fac))
+    lifestyle = int(round(C["lifestyle"][level["lifestyle"]] * fac))
     travel = C["travel"][p["travel_tier"]]
     savings = C["savings"][p["savings_tier"]]
     education = C["education"][p["education_tier"]]
     debt = int(p.get("debt_payment") or 0)
 
     lines = [
-        ("Housing", housing, C["housing"][housing_tier]["label"]),
+        ("Housing", housing, f"{C['housing_labels'][housing_tier]} — {city_key}"),
         ("Utilities", utilities, utilities_note),
         ("Tenant/home insurance", tenant_ins, ""),
         ("Groceries", food, ""),
@@ -379,13 +388,17 @@ def build_plans(ranked, ctx):
     safe = first(safe_pool) or first(ranked)
     used.add(safe["path"]["id"])
 
-    # Bold: entrepreneurship-first or dream-first
-    bold_pool = [x for x in ranked if x["path"]["category"] == "AI-Era Entrepreneurship"
-                 or x["path"]["business_potential"] == "Very High"]
+    # Bold: entrepreneurship-first or dream-first. Creative paths only enter the
+    # bold pool when the user actually expressed a creative interest.
     if has_dream_signal(p):
         bold_pool = [x for x in ranked
                      if x["path"]["category"] in ("AI-Era Entrepreneurship", "Creative & Passion", "Freelance & Self-Employment")
                      or x["path"]["business_potential"] == "Very High"]
+    else:
+        bold_pool = [x for x in ranked
+                     if (x["path"]["category"] == "AI-Era Entrepreneurship"
+                         or x["path"]["business_potential"] == "Very High")
+                     and x["path"]["category"] != "Creative & Passion"]
     bold = first(bold_pool) or first(ranked)
     used.add(bold["path"]["id"])
 
@@ -650,55 +663,151 @@ def compute_results(p):
 
 
 # --------------------------------------------------------------------------
-# Sample profile (drives the demo button and engine smoke tests)
+# Sample profiles (drive the demo picker and engine smoke tests).
+# Three deliberately different personas so no single story — creative, tech,
+# or otherwise — reads as the app's default user.
 # --------------------------------------------------------------------------
 
-SAMPLE_PROFILE = {
-    "age_range": "20-24",
-    "city": "Calgary, Alberta",
-    "housing_now": "Renting - shared with roommates",
-    "education_level": "Certificate or diploma",
-    "work_status": "Working part-time",
-    "current_income": 32000,
-    "take_home_monthly": 2100,
-    "savings": 6000,
-    "debt_total": 4000,
-    "debt_payment": 150,
-    "skills": ["Music / audio", "Coding / software", "Customer service"],
-    "current_field": "Creative / arts / music / media",
-    "support_level": "Some support (partner or family)",
-    "timeframe_label": "5 years",
-    "timeframe_years": 5,
-    "target_city": "Calgary, Alberta",
-    "business_interest": "Curious",
-    "creative_interest": "Music / performance",
-    "lifestyle_level": "Stable and realistic",
-    "balance": "Balanced",
-    "housing_tier": "stable_one_bedroom",
-    "vehicle_tier": "reliable_used",
-    "travel_tier": "one_modest_trip",
-    "savings_tier": "three_month_buffer",
-    "education_tier": "part_time_courses",
-    "risk_tolerance": "Medium",
-    "income_speed": "Somewhat - within a year or two",
-    "study_willingness": "High",
-    "evenings_weekends": "High",
-    "structure_pref": "Medium",
-    "autonomy_pref": "High",
-    "sales_comfort": "Medium",
-    "uncertainty_comfort": "Medium",
-    "ai_interest": "High",
-    "ent_interest": "High",
-    "stable_interest": "Medium",
-    "freelance_interest": "High",
-    "trades_interest": "Low",
-    "creative_interest_ws": "High",
-    "ent_shown": True,
-    "ent_answers": {
-        "sales": True, "accounting": True, "marketing": True, "customers": True,
-        "rejection": True, "paid_skill": True, "runway": False, "start_small": True, "training": True,
+SAMPLE_PROFILES = {
+    "Hospitality supervisor, 28 — Lethbridge, wants stability": {
+        "age_range": "25-29",
+        "current_city": "Lethbridge",
+        "housing_now": "Renting - shared with roommates",
+        "education_level": "Some post-secondary",
+        "work_status": "Working full-time",
+        "current_income": 41000,
+        "take_home_monthly": 2700,
+        "savings": 3500,
+        "debt_total": 6000,
+        "debt_payment": 180,
+        "skills": ["Customer service", "Organization / planning"],
+        "current_field": "Service / hospitality / retail",
+        "support_level": "Fully independent / no support",
+        "timeframe_label": "5 years",
+        "timeframe_years": 5,
+        "target_city": "Lethbridge",
+        "business_interest": "No / not now",
+        "creative_interest": "None / not a focus",
+        "lifestyle_level": "Stable and realistic",
+        "balance": "Balanced",
+        "housing_tier": "basic_private",
+        "vehicle_tier": "older_used",
+        "travel_tier": "one_modest_trip",
+        "savings_tier": "starter",
+        "education_tier": "part_time_courses",
+        "risk_tolerance": "Low",
+        "income_speed": "Somewhat - within a year or two",
+        "study_willingness": "Medium",
+        "evenings_weekends": "Medium",
+        "structure_pref": "High",
+        "autonomy_pref": "Medium",
+        "sales_comfort": "Low",
+        "uncertainty_comfort": "Low",
+        "ai_interest": "Medium",
+        "ent_interest": "Low",
+        "stable_interest": "High",
+        "freelance_interest": "Low",
+        "trades_interest": "Medium",
+        "creative_interest_ws": "Low",
+        "ent_shown": False,
+        "ent_answers": {},
+    },
+    "Tech diploma grad, 23 — Edmonton, AI-curious": {
+        "age_range": "20-24",
+        "current_city": "Edmonton",
+        "housing_now": "Living with family",
+        "education_level": "Certificate or diploma",
+        "work_status": "Working part-time",
+        "current_income": 18000,
+        "take_home_monthly": 1300,
+        "savings": 4000,
+        "debt_total": 0,
+        "debt_payment": 0,
+        "skills": ["Coding / software", "Numbers / analysis"],
+        "current_field": "Technology / IT",
+        "support_level": "Living at home / strong family support",
+        "timeframe_label": "5 years",
+        "timeframe_years": 5,
+        "target_city": "Edmonton",
+        "business_interest": "Curious",
+        "creative_interest": "None / not a focus",
+        "lifestyle_level": "Stable and realistic",
+        "balance": "Push hard for income",
+        "housing_tier": "shared",
+        "vehicle_tier": "none",
+        "travel_tier": "one_modest_trip",
+        "savings_tier": "three_month_buffer",
+        "education_tier": "self_directed",
+        "risk_tolerance": "Medium",
+        "income_speed": "Somewhat - within a year or two",
+        "study_willingness": "High",
+        "evenings_weekends": "High",
+        "structure_pref": "Medium",
+        "autonomy_pref": "High",
+        "sales_comfort": "Medium",
+        "uncertainty_comfort": "Medium",
+        "ai_interest": "High",
+        "ent_interest": "High",
+        "stable_interest": "Medium",
+        "freelance_interest": "Medium",
+        "trades_interest": "Low",
+        "creative_interest_ws": "Low",
+        "ent_shown": True,
+        "ent_answers": {
+            "sales": True, "accounting": True, "marketing": True, "customers": True,
+            "rejection": False, "paid_skill": True, "runway": False, "start_small": True, "training": True,
+        },
+    },
+    "Working musician, 25 — Calgary, creative focus": {
+        "age_range": "25-29",
+        "current_city": "Calgary",
+        "housing_now": "Renting - shared with roommates",
+        "education_level": "Certificate or diploma",
+        "work_status": "Working part-time",
+        "current_income": 32000,
+        "take_home_monthly": 2100,
+        "savings": 6000,
+        "debt_total": 4000,
+        "debt_payment": 150,
+        "skills": ["Music / audio", "Teaching / coaching", "Customer service"],
+        "current_field": "Creative / arts / music / media",
+        "support_level": "Some support (partner or family)",
+        "timeframe_label": "5 years",
+        "timeframe_years": 5,
+        "target_city": "Calgary",
+        "business_interest": "Curious",
+        "creative_interest": "Music / performance",
+        "lifestyle_level": "Stable and realistic",
+        "balance": "Balanced",
+        "housing_tier": "stable_one_bedroom",
+        "vehicle_tier": "reliable_used",
+        "travel_tier": "one_modest_trip",
+        "savings_tier": "three_month_buffer",
+        "education_tier": "part_time_courses",
+        "risk_tolerance": "Medium",
+        "income_speed": "Somewhat - within a year or two",
+        "study_willingness": "High",
+        "evenings_weekends": "High",
+        "structure_pref": "Medium",
+        "autonomy_pref": "High",
+        "sales_comfort": "Medium",
+        "uncertainty_comfort": "Medium",
+        "ai_interest": "Medium",
+        "ent_interest": "High",
+        "stable_interest": "Medium",
+        "freelance_interest": "High",
+        "trades_interest": "Low",
+        "creative_interest_ws": "High",
+        "ent_shown": True,
+        "ent_answers": {
+            "sales": True, "accounting": True, "marketing": True, "customers": True,
+            "rejection": True, "paid_skill": True, "runway": False, "start_small": True, "training": True,
+        },
     },
 }
+
+# Back-compat alias used by engine smoke tests (richest profile: dream + ent paths).
+SAMPLE_PROFILE = SAMPLE_PROFILES["Working musician, 25 — Calgary, creative focus"]
 
 
 # ==========================================================================
@@ -856,11 +965,12 @@ def step_welcome():
         f"Assumptions: {C['market']}, {C['currency']}, updated {C['last_updated']}. "
         "Takes about 8–10 minutes. Nothing is saved or sent anywhere."
     )
-    c1, c2, _ = st.columns([1, 1.6, 2.4])
+    c1, c2, c3 = st.columns([0.9, 2.2, 1.7])
     if c1.button("Start →", type="primary"):
         go(1)
-    if c2.button("Try a sample profile (demo)"):
-        st.session_state.p = dict(SAMPLE_PROFILE)
+    persona = c2.selectbox("Sample profile", list(SAMPLE_PROFILES.keys()), label_visibility="collapsed")
+    if c3.button("Try this sample (demo)"):
+        st.session_state.p = dict(SAMPLE_PROFILES[persona])
         go(6)
 
 
@@ -876,7 +986,8 @@ def step_current():
         c1, c2 = st.columns(2)
         with c1:
             age = st.selectbox("Age range", O["age_ranges"], index=O["age_ranges"].index(p.get("age_range", "20-24")))
-            city = st.text_input("Current city/province", value=p.get("city", "Calgary, Alberta"))
+            city = st.selectbox("Where do you live now?", O["alberta_cities"],
+                                index=O["alberta_cities"].index(p.get("current_city", "Calgary")))
             housing_now = st.selectbox("Current housing situation", O["housing_now"],
                                        index=O["housing_now"].index(p.get("housing_now", O["housing_now"][0])))
             education = st.selectbox("Current education level", O["education_levels"],
@@ -903,7 +1014,7 @@ def step_current():
         back, nxt = nav_buttons(0)
     if back or nxt:
         p.update({
-            "age_range": age, "city": city, "housing_now": housing_now, "education_level": education,
+            "age_range": age, "current_city": city, "housing_now": housing_now, "education_level": education,
             "work_status": work, "support_level": support, "current_income": income,
             "take_home_monthly": take_home, "savings": savings, "debt_total": debt_total,
             "debt_payment": debt_payment, "skills": skills, "current_field": field,
@@ -925,8 +1036,11 @@ def step_future():
             tf = st.selectbox("Target timeframe", tf_labels, index=tf_labels.index(p.get("timeframe_label", "5 years")))
             custom_years = st.number_input("If Custom: how many years?", min_value=1, max_value=20,
                                            value=int(p.get("timeframe_years") or 5))
-            target_city = st.text_input("Desired location", value=p.get("target_city", "Calgary, Alberta"),
-                                        help="Costs stay Calgary-based in this prototype — treat other cities as directional.")
+            target_city = st.selectbox(
+                "Where do you want to live?", O["alberta_cities"],
+                index=O["alberta_cities"].index(p.get("target_city", p.get("current_city", "Calgary"))),
+                help="Housing and everyday costs adapt to this city. 'Outside Alberta' uses Calgary-baseline numbers.",
+            )
             lifestyle = st.selectbox("Desired lifestyle level", list(O["lifestyle_levels"].keys()),
                                      index=list(O["lifestyle_levels"].keys()).index(p.get("lifestyle_level", "Stable and realistic")))
         with c2:
@@ -954,15 +1068,16 @@ def step_tiers():
     p = p_state()
     C = costs()
     O = options()
+    city_key, city = city_costs(p)
     st.header("Step 3 — Pick your tiers")
-    st.caption("These drive the budget. Every dollar figure is an editable Calgary assumption, not a quote.")
+    st.caption(f"These drive the budget. Every dollar figure is an editable assumption for {city_key}, not a quote.")
 
     with st.form("tiers"):
-        housing_keys = list(C["housing"].keys())
+        housing_keys = list(C["housing_labels"].keys())
         housing = st.selectbox(
             "Housing goal", housing_keys,
             index=housing_keys.index(p.get("housing_tier", "stable_one_bedroom")),
-            format_func=lambda k: f"{C['housing'][k]['label']} — ~{money(C['housing'][k]['monthly'])}/mo",
+            format_func=lambda k: f"{C['housing_labels'][k]} — ~{money(city['housing'][k])}/mo",
         )
         vehicle_keys = list(C["vehicle"].keys())
         vehicle = st.selectbox(
@@ -1102,9 +1217,12 @@ def render_results():
     # 1. Target life summary
     section(1, "Your target life")
     C = costs()
+    place = p.get("target_city", "Calgary")
+    if place == "Outside Alberta / other":
+        place = "outside Alberta (Calgary-baseline costs)"
     summary = (
-        f"In <b>{r['years']} years</b>, in <b>{p.get('target_city', 'Calgary')}</b>: "
-        f"{C['housing'][p['housing_tier']]['label'].lower()}, "
+        f"In <b>{r['years']} years</b>, in <b>{place}</b>: "
+        f"{C['housing_labels'][p['housing_tier']].lower()}, "
         f"{C['vehicle'][p['vehicle_tier']]['label'].lower()}, "
         f"{O['travel_labels'][p['travel_tier']].lower()}, "
         f"{O['savings_labels'][p['savings_tier']].lower()}, "

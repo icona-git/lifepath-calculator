@@ -1,15 +1,54 @@
 {
-  "market": "Calgary, Alberta",
+  "market": "Alberta, Canada",
   "currency": "CAD",
   "last_updated": "2026-06-12",
-  "disclaimer": "Prototype planning assumptions, not verified quotes. Edit this file to change every cost in the app.",
-  "housing": {
-    "family_support": { "monthly": 500, "label": "Living with family/support contribution" },
-    "shared": { "monthly": 950, "label": "Shared apartment/roommates" },
-    "basic_private": { "monthly": 1350, "label": "Basic private apartment" },
-    "stable_one_bedroom": { "monthly": 1650, "label": "Stable one-bedroom apartment" },
-    "comfortable": { "monthly": 2100, "label": "Comfortable one-bedroom or modest two-bedroom" },
-    "premium": { "monthly": 2800, "label": "Premium/luxury rental" }
+  "disclaimer": "Prototype planning assumptions, not verified quotes. Edit this file to change every cost in the app. City housing figures and everyday factors are directional mid-2026 estimates.",
+  "housing_labels": {
+    "family_support": "Living with family/support contribution",
+    "shared": "Shared apartment/roommates",
+    "basic_private": "Basic private apartment",
+    "stable_one_bedroom": "Stable one-bedroom apartment",
+    "comfortable": "Comfortable one-bedroom or modest two-bedroom",
+    "premium": "Premium/luxury rental"
+  },
+  "cities": {
+    "Calgary": {
+      "everyday_factor": 1.0,
+      "housing": { "family_support": 500, "shared": 950, "basic_private": 1350, "stable_one_bedroom": 1650, "comfortable": 2100, "premium": 2800 }
+    },
+    "Edmonton": {
+      "everyday_factor": 0.97,
+      "housing": { "family_support": 450, "shared": 800, "basic_private": 1150, "stable_one_bedroom": 1400, "comfortable": 1800, "premium": 2400 }
+    },
+    "Red Deer": {
+      "everyday_factor": 0.95,
+      "housing": { "family_support": 400, "shared": 750, "basic_private": 1000, "stable_one_bedroom": 1200, "comfortable": 1550, "premium": 2000 }
+    },
+    "Lethbridge": {
+      "everyday_factor": 0.94,
+      "housing": { "family_support": 400, "shared": 700, "basic_private": 950, "stable_one_bedroom": 1150, "comfortable": 1450, "premium": 1900 }
+    },
+    "Medicine Hat": {
+      "everyday_factor": 0.93,
+      "housing": { "family_support": 350, "shared": 650, "basic_private": 900, "stable_one_bedroom": 1050, "comfortable": 1350, "premium": 1750 }
+    },
+    "Fort McMurray": {
+      "everyday_factor": 1.08,
+      "housing": { "family_support": 550, "shared": 900, "basic_private": 1250, "stable_one_bedroom": 1450, "comfortable": 1850, "premium": 2500 }
+    },
+    "Grande Prairie": {
+      "everyday_factor": 1.0,
+      "housing": { "family_support": 450, "shared": 750, "basic_private": 1050, "stable_one_bedroom": 1250, "comfortable": 1600, "premium": 2100 }
+    },
+    "Smaller town / rural Alberta": {
+      "everyday_factor": 0.93,
+      "housing": { "family_support": 350, "shared": 650, "basic_private": 850, "stable_one_bedroom": 1000, "comfortable": 1300, "premium": 1700 }
+    },
+    "Outside Alberta / other": {
+      "everyday_factor": 1.0,
+      "housing": { "family_support": 500, "shared": 950, "basic_private": 1350, "stable_one_bedroom": 1650, "comfortable": 2100, "premium": 2800 },
+      "note": "Falls back to Calgary-baseline costs; the prototype's data is Alberta-only."
+    }
   },
   "vehicle": {
     "none": { "monthly": 125, "label": "Transit/no car" },
