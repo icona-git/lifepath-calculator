@@ -705,24 +705,112 @@ SAMPLE_PROFILE = {
 # UI — everything below renders Streamlit and never runs on plain import
 # ==========================================================================
 
-RISK_COLORS = {"Low": "#2e7d32", "Medium": "#a67c00", "High": "#d35400", "Very High": "#c0392b"}
-GOOD_COLORS = {"Low": "#8a8a8a", "Medium": "#7d9a44", "High": "#2e7d32", "Very High": "#1b5e20"}
-MARKET_COLORS = {"Hot": "#2e7d32", "Warm": "#5e9c52", "Balanced": "#8a8a8a", "Cool": "#c47f17", "Cold": "#b3402f"}
+# Design language ported from the Figma Make redesign (sky-lens-33549714.figma.site):
+# warm paper background, Playfair Display serif headings, Inter body, DM Mono money,
+# pastel level pills, white cards, sage sidebar with a checkmarked stepper.
+
+INK = "#1A1A18"
+MUTED = "#6B6B62"
+GREEN = "#1F6F54"
+
+THEME_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+.stApp { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #1A1A18; }
+h1, h2, h3, h4 { font-family: 'Playfair Display', Georgia, serif !important; font-weight: 500 !important; color: #1A1A18 !important; }
+header[data-testid="stHeader"] { background: rgba(0,0,0,0); }
+.stAppDeployButton { display: none; }
+
+/* Sidebar: sage panel + brand + stepper */
+[data-testid="stSidebar"] { background-color: #EEF0EC; border-right: 1px solid rgba(0,0,0,0.06); }
+.lp-brand { display: flex; align-items: center; gap: .55rem; margin: .2rem 0 .4rem 0; }
+.lp-brand-badge { width: 30px; height: 30px; border-radius: 8px; background: #1F6F54; color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .8rem; }
+.lp-brand-name { font-family: 'Playfair Display', Georgia, serif; font-size: 1.12rem; font-weight: 600; color: #1A1A18; }
+ul.lp-steps { list-style: none; padding: 0; margin: .8rem 0 1rem 0; }
+ul.lp-steps li { display: flex; align-items: center; gap: .6rem; padding: .34rem .55rem; border-radius: 8px;
+  color: #8B8A80; font-size: .88rem; }
+ul.lp-steps li.current { background: #DFE6DD; color: #1A1A18; font-weight: 600; }
+ul.lp-steps li.done { color: #57564F; }
+.lp-step-dot { width: 15px; height: 15px; border-radius: 50%; border: 2px solid #C4C2B8; flex: none;
+  font-size: 9px; line-height: 11px; text-align: center; color: transparent; }
+li.done .lp-step-dot { background: #1F6F54; border-color: #1F6F54; color: #fff; }
+li.current .lp-step-dot { background: #1F6F54; border-color: #1F6F54; }
+
+/* Metric cards */
+[data-testid="stMetric"] { background: #FBFAF7; border: 1px solid rgba(0,0,0,0.08); border-radius: 10px; padding: .85rem 1rem; }
+[data-testid="stMetric"] [data-testid="stMetricLabel"] p { text-transform: uppercase; letter-spacing: .07em;
+  font-size: .68rem; font-weight: 600; color: #6B6B62; }
+[data-testid="stMetricValue"] { font-family: 'DM Mono', 'Fira Code', monospace; font-size: 1.4rem; }
+[data-testid="stMetricDelta"] { font-size: .78rem; }
+
+/* Buttons, inputs, tabs, expanders, cards */
+button[data-testid^="stBaseButton"] { border-radius: 8px; font-weight: 600; }
+.stTextInput input, .stNumberInput input { background: #FFFFFF; border-radius: 8px; }
+[data-baseweb="select"] > div { background-color: #FFFFFF; border-radius: 8px; }
+[data-baseweb="tab-list"] { gap: .5rem; }
+button[data-baseweb="tab"] { background: #FFFFFF; border: 1px solid rgba(0,0,0,0.1); border-radius: 999px; padding: 4px 16px; }
+button[data-baseweb="tab"][aria-selected="true"] { background: #1F6F54; border-color: #1F6F54; }
+button[data-baseweb="tab"][aria-selected="true"] p { color: #FFFFFF; }
+[data-baseweb="tab-highlight"], [data-baseweb="tab-border"] { display: none; }
+[data-testid="stExpander"] { background: #FFFFFF; border-radius: 10px; }
+[data-testid="stVerticalBlockBorderWrapper"] { background: #FFFFFF; border-radius: 12px; }
+
+/* Hard truths quotes */
+blockquote { border-left: 3px solid #1F6F54 !important; background: #FFFFFF; border-radius: 0 10px 10px 0; padding: .65rem 1rem !important; }
+blockquote p { color: #3F3E38; }
+
+/* Custom components */
+.lp-hero { font-size: 2.85rem; line-height: 1.13; margin: .2rem 0 .6rem 0; }
+.lp-eyebrow { text-transform: uppercase; letter-spacing: .13em; font-size: .72rem; font-weight: 600; color: #6B6B62; margin-bottom: -1.6rem; }
+.lp-panel { background: #E7F0E9; border: 1px solid #D5E4DA; border-radius: 10px; padding: .9rem 1.1rem;
+  color: #23523F; font-size: .95rem; line-height: 1.55; margin: .35rem 0 .6rem 0; }
+h2 .lp-num { color: #B9B7AE; font-family: 'Inter', sans-serif; font-weight: 600; margin-right: .55rem; }
+</style>
+"""
+
+PILL_STYLES = {
+    "green": ("#E3EFE3", "#1F6F54"),
+    "amber": ("#F8EED2", "#8A5A12"),
+    "red": ("#F7E1DF", "#9E2B25"),
+    "grey": ("#ECEAE4", "#57564F"),
+    "blue": ("#E2E9F8", "#2B4F9E"),
+}
+
+RISK_KIND = {"Low": "green", "Medium": "amber", "High": "red", "Very High": "red"}
+LEVERAGE_KIND = {"Low": "grey", "Medium": "green", "High": "green", "Very High": "green"}
+MARKET_KIND = {"Hot": "green", "Warm": "green", "Balanced": "grey", "Cool": "amber", "Cold": "red"}
 
 
-def pill(text, color):
+def pill(text, kind="grey"):
+    bg, fg = PILL_STYLES[kind]
     return (
-        f'<span style="background:{color};color:#fff;padding:2px 10px;border-radius:999px;'
-        f'font-size:0.78rem;font-weight:600;white-space:nowrap;display:inline-block;margin:2px 4px 2px 0;">{text}</span>'
+        f'<span style="background:{bg};color:{fg};padding:2px 11px;border-radius:999px;'
+        f'font-size:0.76rem;font-weight:600;white-space:nowrap;display:inline-block;margin:2px 4px 2px 0;">{text}</span>'
     )
 
 
 def ai_pills(path):
     return "".join([
-        pill(f"AI exposure: {path['ai_exposure_level']}", RISK_COLORS[path["ai_exposure_level"]]),
-        pill(f"Disruption risk: {path['ai_disruption_risk']}", RISK_COLORS[path["ai_disruption_risk"]]),
-        pill(f"AI leverage: {path['ai_leverage_potential']}", GOOD_COLORS[path["ai_leverage_potential"]]),
+        pill(f"AI exposure: {path['ai_exposure_level']}", RISK_KIND[path["ai_exposure_level"]]),
+        pill(f"Disruption risk: {path['ai_disruption_risk']}", RISK_KIND[path["ai_disruption_risk"]]),
+        pill(f"AI leverage: {path['ai_leverage_potential']}", LEVERAGE_KIND[path["ai_leverage_potential"]]),
     ])
+
+
+def panel(html):
+    """Mint callout panel (replaces st.info for brand-styled notices)."""
+    st.markdown(f'<div class="lp-panel">{html}</div>', unsafe_allow_html=True)
+
+
+def section(num, title):
+    """Numbered serif section header, Figma-style grey number."""
+    st.markdown(f'<h2><span class="lp-num">{num}</span>{title}</h2>', unsafe_allow_html=True)
+
+
+def eyebrow(text):
+    st.markdown(f'<div class="lp-eyebrow">{text}</div>', unsafe_allow_html=True)
 
 
 def p_state():
@@ -747,8 +835,11 @@ def nav_buttons(back_step, label="Continue →"):
 
 def step_welcome():
     C = costs()
-    st.title("🧭 LifePath Calculator")
-    st.subheader("Describe the life you want. See what it costs. Compare the paths that can get you there.")
+    st.markdown(
+        '<h1 class="lp-hero">Describe the life you want.<br/>See what it costs.<br/>'
+        "Compare the paths that can get you there.</h1>",
+        unsafe_allow_html=True,
+    )
     st.write(
         "This tool helps you turn a future lifestyle goal into a realistic income and pathway plan. "
         "It asks what life you want in your chosen timeframe and where you are now, estimates what that "
@@ -756,12 +847,16 @@ def step_welcome():
         "freelance, trades, employment, and entrepreneurship pathways — including where AI may bite and where "
         "it can be your leverage."
     )
-    st.info(DISCLAIMER, icon="ℹ️")
+    panel(
+        "<b>This is a planning prototype, not financial, tax, career, or legal advice.</b> "
+        "Costs, wages, taxes, and job markets change. Use this as a decision-support tool, then verify "
+        "important decisions with current sources and qualified advisors where needed."
+    )
     st.caption(
         f"Assumptions: {C['market']}, {C['currency']}, updated {C['last_updated']}. "
         "Takes about 8–10 minutes. Nothing is saved or sent anywhere."
     )
-    c1, c2 = st.columns([1, 1])
+    c1, c2, _ = st.columns([1, 1.6, 2.4])
     if c1.button("Start →", type="primary"):
         go(1)
     if c2.button("Try a sample profile (demo)"):
@@ -960,16 +1055,18 @@ def step_ent():
 
 # ---------------------------- Results page --------------------------------
 
-def render_path_card(item, plan_note):
+def render_path_card(item, plan_note, badge=None):
     path = item["path"]
     inc = path["income_range_cad"]
     with st.container(border=True):
+        if badge:
+            st.markdown(pill(badge[0], badge[1]), unsafe_allow_html=True)
         st.markdown(f"#### {path['name']}")
         st.caption(f"{path['category']} · {plan_note}")
         st.markdown(
-            pill(f"Risk: {path['risk_level']}", RISK_COLORS[path["risk_level"]])
-            + pill(f"Market: {path['job_market_signal']}", MARKET_COLORS[path["job_market_signal"]])
-            + pill(f"Training cost: {path['training_cost_level']}", RISK_COLORS[path["training_cost_level"]])
+            pill(f"Risk: {path['risk_level']}", RISK_KIND[path["risk_level"]])
+            + pill(f"Market: {path['job_market_signal']}", MARKET_KIND[path["job_market_signal"]])
+            + pill(f"Training cost: {path['training_cost_level']}", RISK_KIND[path["training_cost_level"]])
             + ai_pills(path),
             unsafe_allow_html=True,
         )
@@ -999,26 +1096,27 @@ def render_results():
     t = r["targets"]
     plans = r["plans"]
 
+    eyebrow("Your LifePath plan")
     st.title("Your LifePath plan")
 
     # 1. Target life summary
-    st.header("1 · Your target life")
+    section(1, "Your target life")
     C = costs()
     summary = (
-        f"In **{r['years']} years**, in **{p.get('target_city', 'Calgary')}**: "
+        f"In <b>{r['years']} years</b>, in <b>{p.get('target_city', 'Calgary')}</b>: "
         f"{C['housing'][p['housing_tier']]['label'].lower()}, "
         f"{C['vehicle'][p['vehicle_tier']]['label'].lower()}, "
         f"{O['travel_labels'][p['travel_tier']].lower()}, "
         f"{O['savings_labels'][p['savings_tier']].lower()}, "
         f"education: {O['education_labels'][p['education_tier']].lower()} — "
-        f"**{p['lifestyle_level'].lower()}** lifestyle, {p['balance'].lower()} pace."
+        f"<b>{p['lifestyle_level'].lower()}</b> lifestyle, {p['balance'].lower()} pace."
     )
-    st.markdown(summary)
     if p.get("creative_interest", "None / not a focus") != "None / not a focus":
-        st.markdown(f"Creative focus to protect: **{p['creative_interest']}**.")
+        summary += f" Creative focus to protect: <b>{p['creative_interest']}</b>."
+    panel(summary)
 
     # 2-4. Cost, income, gap
-    st.header("2 · What it costs, and the income that supports it")
+    section(2, "What it costs, and the income that supports it")
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Monthly cost", f"{money(t['monthly_low'])}–{money(t['monthly_high'])}", help="After-tax spending, including buffer")
     m2.metric("Annual after-tax need", f"≈ {money(t['annual_mid'])}")
@@ -1043,20 +1141,20 @@ def render_results():
         st.markdown(esc(f"**Total: {money(t['monthly_mid'])}/month** (planning range {money(t['monthly_low'])}–{money(t['monthly_high'])})"))
 
     # 5. Three plans
-    st.header("3 · Three possible plans")
+    section(3, "Three possible plans")
     tab_safe, tab_bal, tab_bold = st.tabs(["🛡️ Safe Plan", "⚖️ Balanced Plan", "🚀 Bold Plan"])
     with tab_safe:
         st.markdown("**Stable, lower-risk employment/training path. Prioritizes income reliability.**")
-        render_path_card(plans["safe"], "Safe plan — income reliability first")
+        render_path_card(plans["safe"], "Safe plan — income reliability first", badge=("✓ Safe Plan", "green"))
     with tab_bal:
         st.markdown("**Practical income engine plus passion or entrepreneurship development. Often the best default.**")
-        render_path_card(plans["balanced"], "Balanced plan — primary income engine")
+        render_path_card(plans["balanced"], "Balanced plan — primary income engine", badge=("⚖ Balanced Plan", "blue"))
         if plans["side"]:
             st.markdown("**…paired with a development track you actually care about:**")
-            render_path_card(plans["side"], "Balanced plan — side development track")
+            render_path_card(plans["side"], "Balanced plan — side development track", badge=("Side track", "grey"))
     with tab_bold:
         st.markdown("**Entrepreneurship-first or dream-first route. Higher ceiling, weaker floor.**")
-        render_path_card(plans["bold"], "Bold plan — higher risk, higher ownership")
+        render_path_card(plans["bold"], "Bold plan — higher risk, higher ownership", badge=("↑ Bold Plan", "amber"))
         savings_now = int(p.get("savings") or 0)
         runway = savings_now / t["monthly_mid"] if t["monthly_mid"] else 0
         need = t["monthly_mid"] * 6
@@ -1094,7 +1192,7 @@ def render_results():
         st.dataframe(pd.DataFrame(rows), hide_index=True)
 
     # 6. AI risk snapshot
-    st.header("4 · AI risk snapshot")
+    section(4, "AI risk snapshot")
     st.caption(AI_DISCLAIMER)
     snapshot = [plans["safe"], plans["balanced"]] + ([plans["side"]] if plans["side"] else []) + [plans["bold"]]
     seen = set()
@@ -1114,7 +1212,7 @@ def render_results():
     # 7. Dream path analysis
     if r["dream"]:
         d = r["dream"]
-        st.header("5 · Dream path analysis")
+        section(5, "Dream path analysis")
         st.caption(f"Your creative focus: {d['interest']}. The dream stays in the plan — it just gets economically tested.")
         t1, t2, t3 = st.tabs(["Direct dream path", "Passion + income path", "Entrepreneurial dream path"])
         with t1:
@@ -1149,9 +1247,9 @@ def render_results():
     # 8. Entrepreneurship readiness
     if r["readiness"].get("assessed"):
         rd = r["readiness"]
-        st.header("6 · Entrepreneurship readiness")
+        section(6, "Entrepreneurship readiness")
         st.markdown(f"**{rd['level']}** — you answered yes to {rd['yes_count']} of {rd['total']} readiness questions.")
-        st.progress(rd["yes_count"] / rd["total"])
+        st.progress(rd["yes_count"] / rd["total"], text=f"{rd['yes_count']} of {rd['total']} readiness signals (indicator, not a control)")
         c1, c2 = st.columns(2)
         with c1:
             st.markdown(esc(
@@ -1176,7 +1274,7 @@ def render_results():
         )
 
     # 9. Roadmap
-    st.header("7 · Your two-year roadmap")
+    section(7, "Your two-year roadmap")
     st.caption("Built from your Balanced plan — the default recommendation.")
     rc1, rc2, rc3 = st.columns(3)
     for col, title, items in ((rc1, "Next 90 days", r["roadmap"]["r90"]),
@@ -1190,13 +1288,13 @@ def render_results():
 
     # 10. Hard truths
     if r["truths"]:
-        st.header("8 · Hard truths")
+        section(8, "Hard truths")
         st.caption("Blunt on purpose. Constructive on purpose.")
         for truth in r["truths"]:
             st.markdown(esc(f"> {truth}"))
 
     # 11. Next 3 moves
-    st.header("9 · Your next 3 moves")
+    section(9, "Your next 3 moves")
     mv_cols = st.columns(3)
     for col, (title, body) in zip(mv_cols, r["moves"]):
         with col:
@@ -1205,7 +1303,7 @@ def render_results():
                 st.markdown(esc(body))
 
     st.divider()
-    st.info(DISCLAIMER, icon="ℹ️")
+    panel(DISCLAIMER)
     c1, c2 = st.columns(2)
     if c1.button("← Adjust my answers"):
         go(5 if p.get("ent_shown") else 4)
@@ -1221,22 +1319,35 @@ STEP_NAMES = ["Welcome", "Your situation", "Future target", "Lifestyle tiers", "
 
 def main():
     st.set_page_config(page_title="LifePath Calculator", page_icon="🧭", layout="wide")
+    st.markdown(THEME_CSS, unsafe_allow_html=True)
     step = st.session_state.setdefault("step", 0)
     p = p_state()
 
     with st.sidebar:
-        st.markdown("### 🧭 LifePath Calculator")
+        st.markdown(
+            '<div class="lp-brand"><div class="lp-brand-badge">LP</div>'
+            '<div class="lp-brand-name">LifePath Calculator</div></div>',
+            unsafe_allow_html=True,
+        )
         shown_step = min(step, 6)
-        st.progress(min(shown_step / 6, 1.0), text=f"{STEP_NAMES[shown_step]}")
+        items = []
+        for i, name in enumerate(STEP_NAMES):
+            if i < shown_step:
+                items.append(f'<li class="done"><span class="lp-step-dot">✓</span>{name}</li>')
+            elif i == shown_step:
+                items.append(f'<li class="current"><span class="lp-step-dot"></span>{name}</li>')
+            else:
+                items.append(f'<li><span class="lp-step-dot"></span>{name}</li>')
+        st.markdown('<ul class="lp-steps">' + "".join(items) + "</ul>", unsafe_allow_html=True)
         C = costs()
         st.caption(
             f"Prototype · assumptions for {C['market']} updated {C['last_updated']}. "
             "All numbers editable in `data/*.json`."
         )
+        st.caption(DISCLAIMER)
         if st.button("Start over", key="sidebar_restart"):
             st.session_state.clear()
             st.rerun()
-        st.caption(DISCLAIMER)
 
     steps = {
         0: step_welcome,
