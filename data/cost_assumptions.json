@@ -1,0 +1,79 @@
+{
+  "market": "Calgary, Alberta",
+  "currency": "CAD",
+  "last_updated": "2026-06-12",
+  "disclaimer": "Prototype planning assumptions, not verified quotes. Edit this file to change every cost in the app.",
+  "housing": {
+    "family_support": { "monthly": 500, "label": "Living with family/support contribution" },
+    "shared": { "monthly": 950, "label": "Shared apartment/roommates" },
+    "basic_private": { "monthly": 1350, "label": "Basic private apartment" },
+    "stable_one_bedroom": { "monthly": 1650, "label": "Stable one-bedroom apartment" },
+    "comfortable": { "monthly": 2100, "label": "Comfortable one-bedroom or modest two-bedroom" },
+    "premium": { "monthly": 2800, "label": "Premium/luxury rental" }
+  },
+  "vehicle": {
+    "none": { "monthly": 125, "label": "Transit/no car" },
+    "older_used": { "monthly": 550, "label": "Older used vehicle including insurance/fuel/maintenance" },
+    "reliable_used": { "monthly": 850, "label": "Reliable used vehicle including payment/insurance/fuel/maintenance" },
+    "newer_financed": { "monthly": 1150, "label": "Newer financed vehicle including payment/insurance/fuel/maintenance" },
+    "premium": { "monthly": 1650, "label": "Premium vehicle lifestyle" }
+  },
+  "food": {
+    "lean": 450,
+    "standard": 650,
+    "comfortable": 850
+  },
+  "utilities": {
+    "shared_or_basic": 175,
+    "standard": 275,
+    "comfortable": 375
+  },
+  "phone": {
+    "basic": 55,
+    "standard": 85,
+    "premium": 120
+  },
+  "internet": {
+    "shared": 40,
+    "standard": 90
+  },
+  "tenant_insurance": {
+    "none": 0,
+    "renting": 30
+  },
+  "health_personal": {
+    "lean": 80,
+    "standard": 140,
+    "comfortable": 220
+  },
+  "lifestyle": {
+    "lean": 250,
+    "standard": 500,
+    "comfortable": 850,
+    "high": 1300
+  },
+  "travel": {
+    "none": 0,
+    "one_modest_trip": 150,
+    "two_modest_trips": 300,
+    "one_large_trip": 450,
+    "aggressive": 800
+  },
+  "savings": {
+    "none": 0,
+    "starter": 200,
+    "three_month_buffer": 500,
+    "long_term": 850,
+    "business_startup": 1000
+  },
+  "education": {
+    "none": 0,
+    "part_time_courses": 250,
+    "full_time_school": 900,
+    "trade_apprenticeship": 350,
+    "creative_school": 800,
+    "business_school": 900,
+    "self_directed": 150
+  },
+  "misc_buffer_percent": 0.10
+}

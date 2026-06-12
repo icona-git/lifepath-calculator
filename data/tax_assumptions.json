@@ -1,0 +1,14 @@
+{
+  "region": "Alberta, Canada",
+  "model": "tiered_net_ratio",
+  "last_updated": "2026-06-12",
+  "note": "Rough combined federal + Alberta effective net ratios for gross-up estimation only. Actual tax depends on deductions, credits, CPP, EI, benefits, self-employment status, and family situation.",
+  "tiers": [
+    { "after_tax_up_to": 36000, "net_ratio": 0.78 },
+    { "after_tax_up_to": 60000, "net_ratio": 0.74 },
+    { "after_tax_up_to": 90000, "net_ratio": 0.69 },
+    { "after_tax_up_to": 130000, "net_ratio": 0.64 },
+    { "after_tax_up_to": null, "net_ratio": 0.60 }
+  ],
+  "uncertainty_percent": 0.08
+}
