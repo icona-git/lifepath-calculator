@@ -714,9 +714,9 @@ def hard_truths(p, t, plans, dream):
     return truths[:6]
 
 
-def next_moves(p, t, plans, readiness):
+def next_moves(p, t, plans, readiness, key="balanced"):
     moves = []
-    primary = plans["balanced"]["path"]
+    primary = plans[key]["path"]
     moves.append((f"Start the income engine: {primary['name']}", primary["first_90_days"][0]))
 
     if p.get("education_tier", "none") != "none":
@@ -732,23 +732,25 @@ def next_moves(p, t, plans, readiness):
             f"Open a separate account and automate {money(amt)}/month toward your buffer — the plan's savings line, made real.",
         ))
 
-    if readiness.get("assessed") and readiness["level_idx"] >= 2:
+    # The side/passion track only belongs to the Balanced plan.
+    side = plans["side"] if key == "balanced" else None
+    if readiness.get("assessed") and readiness["level_idx"] >= 2 and key in ("balanced", "bold"):
         moves.append((
             "Test a first offer",
             f"Offer {readiness['first_offer']} to 10 real prospects and try to land 1–3 paying customers before spending anything on branding.",
         ))
-    elif plans["side"]:
-        side = plans["side"]["path"]
-        moves.append((f"Protect the passion: {side['name']}", side["first_90_days"][0]))
+    elif side:
+        moves.append((f"Protect the passion: {side['path']['name']}", side["path"]["first_90_days"][0]))
     else:
         moves.append(("Build proof", primary["first_90_days"][1] if len(primary["first_90_days"]) > 1 else "Document your progress publicly."))
 
     return moves[:3]
 
 
-def build_roadmap(plans):
-    primary = plans["balanced"]["path"]
-    side = plans["side"]["path"] if plans["side"] else None
+def build_roadmap(plans, key="balanced"):
+    primary = plans[key]["path"]
+    # The side/passion track only belongs to the Balanced plan.
+    side = plans["side"]["path"] if (key == "balanced" and plans.get("side")) else None
     r90 = list(primary["first_90_days"])
     if side:
         r90.append(f"Side track — {side['first_90_days'][0]}")
@@ -1669,13 +1671,23 @@ def render_results():
             "but execution still matters."
         )
 
-    # 9. Roadmap
+    # 8. Roadmap — follows the plan you choose, so it always matches the path shown
     section(8, "Your two-year roadmap")
-    st.caption("Built from your Balanced plan — the default recommendation.")
+    plan_keys = ["balanced", "safe", "bold"]
+    plan_labels = {k: f"{k.capitalize()} plan — {plans[k]['path']['name']}" for k in plan_keys}
+    chosen_label = st.radio(
+        "Build the roadmap and next moves for which plan?",
+        [plan_labels[k] for k in plan_keys], index=0,
+    )
+    chosen_key = next(k for k in plan_keys if plan_labels[k] == chosen_label)
+    chosen_path = plans[chosen_key]["path"]
+    roadmap = build_roadmap(plans, chosen_key)
+    chosen_moves = next_moves(p, t, plans, r["readiness"], chosen_key)
+    st.caption(esc(f"Path: {chosen_path['name']} · {chosen_path['time_to_income']}"))
     rc1, rc2, rc3 = st.columns(3)
-    for col, title, items in ((rc1, "Next 90 days", r["roadmap"]["r90"]),
-                              (rc2, "Months 4–12", r["roadmap"]["y1"]),
-                              (rc3, "Year 2", r["roadmap"]["y2"])):
+    for col, title, items in ((rc1, "Next 90 days", roadmap["r90"]),
+                              (rc2, "Months 4–12", roadmap["y1"]),
+                              (rc3, "Year 2", roadmap["y2"])):
         with col:
             with st.container(border=True):
                 st.markdown(f"**{title}**")
@@ -1689,10 +1701,11 @@ def render_results():
         for truth in r["truths"]:
             st.markdown(esc(f"> {truth}"))
 
-    # 11. Next 3 moves
+    # 10. Next 3 moves — same chosen plan as the roadmap above
     section(10, "Your next 3 moves")
+    st.caption(esc(f"For your {chosen_key} plan: {chosen_path['name']}."))
     mv_cols = st.columns(3)
-    for col, (title, body) in zip(mv_cols, r["moves"]):
+    for col, (title, body) in zip(mv_cols, chosen_moves):
         with col:
             with st.container(border=True):
                 st.markdown(f"**{title}**")
