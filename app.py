@@ -34,10 +34,31 @@ AI_DISCLAIMER = (
     "AI exposure rating may also mean high opportunity for people who learn to use AI well."
 )
 
-STABLE_CATEGORIES = {"Public Sector & Stability", "Healthcare & Care Work", "Trades & Technical"}
-SELF_EMPLOYED_CATEGORIES = {"Freelance & Self-Employment", "AI-Era Entrepreneurship"}
-
 LEVEL_ORDER = {"Low": 0, "Medium": 1, "High": 2, "Very High": 3}
+
+# Engine logic keys on career_family / pathway_type (spec addendum); `category`
+# is now display-only.
+STABLE_TYPES = {"stable_job", "credentialled_path", "regulated", "apprenticeship"}
+SELF_EMP_TYPES = {"entrepreneurial", "freelance", "sales_based"}
+HANDS_ON_FAMILIES = {"trades", "construction", "energy", "agriculture", "manufacturing", "transport", "environment"}
+HANDS_ON_TYPES = {"field_work", "apprenticeship"}
+
+# Diversity-rule gates: these ids need explicit fit signals (spec rules 3 & 4)
+PM_GATED_IDS = {"project_manager", "technical_project_coordinator"}
+AI_CENTRIC_IDS = {"ai_automation_specialist", "ai_workflow_consultant", "local_business_automation",
+                  "ai_automation_service_provider", "prompt_workflow_designer", "ai_content_studio"}
+
+
+def fam(path):
+    return path.get("career_family", "")
+
+
+def ptype(path):
+    return path.get("pathway_type", "stable_job")
+
+
+def is_hands_on(path):
+    return fam(path) in HANDS_ON_FAMILIES or ptype(path) in HANDS_ON_TYPES
 
 
 # --------------------------------------------------------------------------
@@ -205,12 +226,27 @@ def compute_targets(p):
 # Engine: pathway scoring (weights, not rigid branching)
 # --------------------------------------------------------------------------
 
-def aligned_categories(p):
+def aligned_families(p):
+    """Career families the user's current field and skills point at (slugs)."""
     O = options()
-    cats = set(O["current_fields"].get(p.get("current_field", ""), []))
+    fams = set(O["current_fields"].get(p.get("current_field", ""), []))
     for skill in p.get("skills", []):
-        cats.update(O["skills"].get(skill, []))
-    return cats
+        fams.update(O["skills"].get(skill, []))
+    return fams
+
+
+def pm_fit(p):
+    """Spec rule 3: generic project management needs explicit fit signals."""
+    return ("Organization / planning" in p.get("skills", [])
+            and p.get("structure_pref") in ("Medium", "High")
+            and p.get("uncertainty_comfort") != "Low")
+
+
+def ent_fit(p):
+    """Spec rule 9: entrepreneurship requires fit signals, not just interest."""
+    return (has_ent_signal(p)
+            and p.get("sales_comfort") != "Low"
+            and p.get("uncertainty_comfort") != "Low")
 
 
 def has_ent_signal(p):
@@ -275,11 +311,12 @@ def score_path(path, ctx):
         score -= 6
 
     # Structure vs autonomy
-    cat = path["category"]
+    family = fam(path)
+    ptype_ = ptype(path)
     if p.get("structure_pref") == "High":
-        if cat in STABLE_CATEGORIES:
+        if ptype_ in STABLE_TYPES:
             score += 6
-        if cat in SELF_EMPLOYED_CATEGORIES:
+        if ptype_ in SELF_EMP_TYPES:
             score -= 6
     if p.get("autonomy_pref") == "High" and LEVEL_ORDER[path["freelance_potential"]] >= 2:
         score += 8
@@ -295,27 +332,31 @@ def score_path(path, ctx):
         score += 8
         reasons.append("Uses your comfort with selling")
 
-    # Entrepreneurship interest
+    # Entrepreneurship interest — and the rule-9 fit gate
     if has_ent_signal(p) and LEVEL_ORDER[path["business_potential"]] >= 2:
         score += 15
         reasons.append("Strong business-building potential")
-    if p.get("ent_interest") == "Low" and cat == "AI-Era Entrepreneurship":
-        score -= 10
+    if ptype_ == "entrepreneurial" and not ent_fit(p):
+        score -= 18
 
-    # Creative interest
+    # Creative interest — passion paths only enter when a dream is on the table (rule 8)
     creative_signal = has_dream_signal(p) or p.get("creative_interest_ws") in ("Medium", "High")
-    if creative_signal and cat == "Creative & Passion":
+    if creative_signal and family == "creative":
         score += 12
         reasons.append("Aligns with your creative interest")
-    if p.get("creative_interest_ws") == "Low" and cat == "Creative & Passion":
+    if p.get("creative_interest_ws") == "Low" and family == "creative":
         score -= 6
+    if ptype_ == "passion_path" and not has_dream_signal(p):
+        score -= 30
 
-    # AI interest and disruption tolerance
+    # AI interest and disruption tolerance — AI is a tool layer, not the default answer (rule 4)
     if p.get("ai_interest") == "High" and LEVEL_ORDER[path["ai_leverage_potential"]] >= 2:
         score += 10
         reasons.append("High AI leverage if you learn the tools")
     if p.get("ai_interest") == "Low" and path["ai_exposure_level"] == "Very High":
         score -= 6
+    if path["id"] in AI_CENTRIC_IDS and p.get("ai_interest") != "High":
+        score -= 15
     needs_income_soon = str(p.get("income_speed", "")).startswith("Yes")
     if needs_income_soon and path["ai_disruption_risk"] == "High":
         score -= 10
@@ -326,6 +367,16 @@ def score_path(path, ctx):
         elif tti["max"] <= 1:
             score += 6
             reasons.append("Fast first income")
+    if needs_income_soon and path.get("income_predictability") == "low":
+        score -= 8
+
+    # Generic project management needs fit signals (rule 3)
+    if path["id"] in PM_GATED_IDS:
+        if pm_fit(p):
+            score += 6
+            reasons.append("Coordination and structure signals fit project work")
+        else:
+            score -= 25
 
     # Labour market signal
     market_pts = {"Hot": 8, "Warm": 4, "Balanced": 0, "Cool": -4, "Cold": -8}
@@ -336,7 +387,7 @@ def score_path(path, ctx):
         reasons.append("Weak Alberta demand signal")
 
     # Existing skills / field alignment
-    if cat in ctx["aligned_cats"]:
+    if family in ctx["aligned_families"]:
         score += 12
         reasons.append("Builds on your existing skills or training")
 
@@ -344,12 +395,14 @@ def score_path(path, ctx):
     if p.get("stable_interest") == "High" and risk == "Low":
         score += 8
         reasons.append("The stable employment you said you want")
-    if p.get("freelance_interest") == "High" and (cat == "Freelance & Self-Employment" or path["freelance_potential"] == "Very High"):
+    if p.get("stable_interest") == "High" and path.get("income_predictability") == "high":
+        score += 4
+    if p.get("freelance_interest") == "High" and (ptype_ == "freelance" or path["freelance_potential"] == "Very High"):
         score += 10
-    if p.get("trades_interest") == "High" and cat == "Trades & Technical":
-        score += 12
-        reasons.append("Matches your interest in trades")
-    if p.get("trades_interest") == "Low" and cat == "Trades & Technical":
+    if p.get("trades_interest") == "High" and is_hands_on(path):
+        score += 10
+        reasons.append("Hands-on work you said you want")
+    if p.get("trades_interest") == "Low" and family == "trades":
         score -= 6
 
     return score, reasons
@@ -369,65 +422,113 @@ def rank_paths(ctx):
 # --------------------------------------------------------------------------
 
 def build_plans(ranked, ctx):
+    """Pick Safe/Balanced/Bold (+side, +upskill) under the diversity rules:
+    one career family per top-3 slot (two if the user explicitly leans that way),
+    guaranteed hands-on and practical-income coverage, passion only beside
+    pragmatic, and an upskilling step when there is no marketable skill yet."""
     p = ctx["p"]
-    used = set()
+    career_ranked = [x for x in ranked if ptype(x["path"]) != "stepping_stone"]
+    used_ids = set()
+    fam_count = {}
 
-    def first(pool):
-        for item in pool:
-            if item["path"]["id"] not in used:
-                return item
+    def pick(pool, cap_exempt=False):
+        for x in pool:
+            f = fam(x["path"])
+            cap = 2 if (cap_exempt or f in ctx["preferred_families"]) else 1
+            if x["path"]["id"] in used_ids:
+                continue
+            if f and fam_count.get(f, 0) >= cap:
+                continue
+            return x
         return None
 
-    # Safe: stable, lower-risk income reliability
-    safe_pool = [x for x in ranked if x["path"]["risk_level"] == "Low"]
-    if not safe_pool:
-        safe_pool = [x for x in ranked
-                     if x["path"]["risk_level"] == "Medium"
-                     and x["path"]["category"] not in SELF_EMPLOYED_CATEGORIES
-                     and x["path"]["sales_requirement"] != "High"]
-    safe = first(safe_pool) or first(ranked)
-    used.add(safe["path"]["id"])
+    def pick_any(pool):
+        # Last-resort fallback: ignore family caps, never return an empty slot
+        for x in pool:
+            if x["path"]["id"] not in used_ids:
+                return x
+        return None
 
-    # Bold: entrepreneurship-first or dream-first. Creative paths only enter the
-    # bold pool when the user actually expressed a creative interest.
+    def take(item):
+        if item:
+            used_ids.add(item["path"]["id"])
+            f = fam(item["path"])
+            fam_count[f] = fam_count.get(f, 0) + 1
+        return item
+
+    def untake(item):
+        used_ids.discard(item["path"]["id"])
+        f = fam(item["path"])
+        fam_count[f] = max(0, fam_count.get(f, 0) - 1)
+
+    # Safe: stable, lower-risk income reliability
+    safe_pool = [x for x in career_ranked
+                 if ptype(x["path"]) in STABLE_TYPES and x["path"]["risk_level"] == "Low"]
+    if not safe_pool:
+        safe_pool = [x for x in career_ranked
+                     if ptype(x["path"]) in STABLE_TYPES and x["path"]["risk_level"] != "High"]
+    safe = take(pick(safe_pool) or pick(career_ranked) or pick_any(career_ranked))
+
+    # Bold: self-employment / high-upside; creative only with a dream signal (rule 8)
     if has_dream_signal(p):
-        bold_pool = [x for x in ranked
-                     if x["path"]["category"] in ("AI-Era Entrepreneurship", "Creative & Passion", "Freelance & Self-Employment")
+        bold_pool = [x for x in career_ranked
+                     if fam(x["path"]) == "creative"
+                     or ptype(x["path"]) in SELF_EMP_TYPES
                      or x["path"]["business_potential"] == "Very High"]
     else:
-        bold_pool = [x for x in ranked
-                     if (x["path"]["category"] == "AI-Era Entrepreneurship"
+        bold_pool = [x for x in career_ranked
+                     if (ptype(x["path"]) in SELF_EMP_TYPES
                          or x["path"]["business_potential"] == "Very High")
-                     and x["path"]["category"] != "Creative & Passion"]
-    bold = first(bold_pool) or first(ranked)
-    used.add(bold["path"]["id"])
+                     and fam(x["path"]) != "creative"]
+    bold = take(pick(bold_pool) or pick(career_ranked) or pick_any(career_ranked))
 
     # Balanced: best remaining practical income engine
-    bal_pool = [x for x in ranked
+    bal_pool = [x for x in career_ranked
                 if x["path"]["risk_level"] != "High"
                 and x["path"]["income_range_cad"]["mid"] >= ctx["req_gross"] * 0.8]
-    balanced = first(bal_pool) or first(ranked)
-    used.add(balanced["path"]["id"])
+    balanced = take(pick(bal_pool) or pick(career_ranked) or pick_any(career_ranked))
 
-    # Balanced side-track: protect the passion / develop the business muscle
+    # Rule 5: if the user is open to hands-on work, at least one pick must be hands-on
+    if ctx["hands_on_open"] and not any(is_hands_on(x["path"]) for x in (safe, balanced, bold) if x):
+        ho = pick([x for x in career_ranked if is_hands_on(x["path"])], cap_exempt=True)
+        if ho:
+            if safe and ptype(ho["path"]) in STABLE_TYPES:
+                untake(safe)
+                safe = take(ho)
+            elif balanced:
+                untake(balanced)
+                balanced = take(ho)
+
+    # Rule 6: a high-income target needs at least one path that actually reaches it
+    if ctx["req_gross"] >= 90000 and balanced and not any(
+            x["path"]["income_range_cad"]["mid"] >= ctx["req_gross"] * 0.9 for x in (safe, balanced, bold) if x):
+        cand = pick([x for x in career_ranked
+                     if x["path"]["income_range_cad"]["mid"] >= ctx["req_gross"] * 0.9
+                     and x["path"].get("income_predictability", "medium") != "low"], cap_exempt=True)
+        if cand:
+            untake(balanced)
+            balanced = take(cand)
+
+    # Side-track: protect the passion / develop the business muscle (top-5 family cap = 2)
     side = None
     if has_dream_signal(p):
-        # Prefer the user's actual dream domain, then any creative path
         pref = DREAM_PATH_MAP.get(p.get("creative_interest", ""), ())
-        side_pool = [x for x in ranked if x["path"]["id"] in pref]
-        side_pool += [x for x in ranked if x["path"]["category"] == "Creative & Passion"]
+        side_pool = [x for x in career_ranked if x["path"]["id"] in pref]
+        side_pool += [x for x in career_ranked if fam(x["path"]) == "creative"]
+        side = take(pick(side_pool, cap_exempt=True))
     elif has_ent_signal(p):
-        side_pool = [x for x in ranked if x["path"]["category"] in SELF_EMPLOYED_CATEGORIES]
+        side = take(pick([x for x in career_ranked if ptype(x["path"]) in ("entrepreneurial", "freelance")]))
     elif p.get("freelance_interest") == "High":
-        side_pool = [x for x in ranked if x["path"]["category"] == "Freelance & Self-Employment"]
-    else:
-        side_pool = []
-    side_item = first(side_pool)
-    if side_item:
-        side = side_item
-        used.add(side["path"]["id"])
+        side = take(pick([x for x in career_ranked if ptype(x["path"]) == "freelance"]))
 
-    return {"safe": safe, "balanced": balanced, "bold": bold, "side": side}
+    # Rule 7 / rule 12: upskilling step when there's no marketable skill anchored yet
+    upskill = None
+    if not ctx["aligned_families"] and (ctx["current_income"] < 40000 or ctx["no_pref"]):
+        steps = [x for x in ranked if ptype(x["path"]) == "stepping_stone"]
+        if steps:
+            upskill = steps[0]
+
+    return {"safe": safe, "balanced": balanced, "bold": bold, "side": side, "upskill": upskill}
 
 
 # --------------------------------------------------------------------------
@@ -507,9 +608,10 @@ def dream_analysis(p, plans, targets):
     direct_id, biz_id = DREAM_PATH_MAP.get(interest, DREAM_PATH_MAP["Other creative pursuit"])
     direct = path_by_id(direct_id)
     biz = path_by_id(biz_id)
-    income_engine = plans["balanced"]["path"]
-    if direct is None or biz is None:
+    engine_item = plans.get("balanced") or plans.get("safe")
+    if direct is None or biz is None or engine_item is None:
         return None
+    income_engine = engine_item["path"]
     return {
         "interest": interest,
         "direct": direct,
@@ -554,10 +656,10 @@ def hard_truths(p, t, plans, dream):
             f"A passion-plus-income strategy is safer."
         )
 
-    aligned = aligned_categories(p)
-    plan_cats = {plans[k]["path"]["category"] for k in ("safe", "balanced", "bold")}
+    aligned = aligned_families(p)
+    plan_fams = {fam(plans[k]["path"]) for k in ("safe", "balanced", "bold") if plans.get(k)}
     educated = p.get("education_level") in ("Certificate or diploma", "Trade ticket / apprenticeship", "Bachelor's degree", "Graduate degree")
-    if educated and aligned and not (aligned & plan_cats):
+    if educated and aligned and not (aligned & plan_fams):
         truths.append(
             "Your existing education and skills are an economic asset. Walking away from them completely would be "
             "wasteful unless you are replacing them with a clearly stronger plan — consider pathways that reuse what you already paid for."
@@ -639,11 +741,25 @@ def compute_results(p):
     t = compute_targets(p)
     O = options()
     yrs = p.get("timeframe_years") or O["timeframes"].get(p.get("timeframe_label", "5 years")) or 5
+    aligned = aligned_families(p)
+    preferred = set(aligned)
+    if p.get("trades_interest") == "High":
+        preferred |= {"trades", "construction"}
+    if has_dream_signal(p):
+        preferred.add("creative")
+    if has_ent_signal(p):
+        preferred |= {"entrepreneurship", "service_business"}
     ctx = {
         "p": p,
         "req_gross": t["gross_mid"],
         "target_years": yrs,
-        "aligned_cats": aligned_categories(p),
+        "aligned_families": aligned,
+        "preferred_families": preferred,
+        "hands_on_open": (p.get("trades_interest") != "Low"
+                          or bool({"Hands-on / mechanical", "Driving / equipment"} & set(p.get("skills", [])))),
+        "no_pref": (not has_dream_signal(p) and not has_ent_signal(p)
+                    and all(p.get(k) != "High" for k in ("trades_interest", "freelance_interest", "stable_interest"))),
+        "current_income": int(p.get("current_income") or 0),
     }
     ranked = rank_paths(ctx)
     plans = build_plans(ranked, ctx)
@@ -900,10 +1016,13 @@ def pill(text, kind="grey"):
     )
 
 
+AI_RISK_LABEL = {"Low": "Low", "Medium": "Moderate", "High": "High"}
+
+
 def ai_pills(path):
     return "".join([
+        pill(f"AI risk: {AI_RISK_LABEL[path['ai_disruption_risk']]}", RISK_KIND[path["ai_disruption_risk"]]),
         pill(f"AI exposure: {path['ai_exposure_level']}", RISK_KIND[path["ai_exposure_level"]]),
-        pill(f"Disruption risk: {path['ai_disruption_risk']}", RISK_KIND[path["ai_disruption_risk"]]),
         pill(f"AI leverage: {path['ai_leverage_potential']}", LEVERAGE_KIND[path["ai_leverage_potential"]]),
     ])
 
@@ -1170,7 +1289,7 @@ def step_ent():
 
 # ---------------------------- Results page --------------------------------
 
-def render_path_card(item, plan_note, badge=None):
+def render_path_card(item, plan_note, badge=None, fallback_monthly=None):
     path = item["path"]
     inc = path["income_range_cad"]
     with st.container(border=True):
@@ -1193,6 +1312,13 @@ def render_path_card(item, plan_note, badge=None):
         st.markdown(esc(f"**Training:** {path['training_required']}"))
         if item["reasons"]:
             st.markdown(esc("**Why it scored well for you:** " + " · ".join(item["reasons"][:4])))
+        if path.get("warnings"):
+            st.markdown(esc("⚠️ **Watch for:** " + " · ".join(path["warnings"])))
+        if fallback_monthly and (path["risk_level"] == "High" or path.get("income_predictability") == "low"):
+            st.caption(esc(
+                f"Fallback trigger: if this path is not producing at least {money(fallback_monthly)}/month "
+                f"within 12 months, shift to the Balanced plan while continuing it as a side effort."
+            ))
         with st.expander("First 90 days"):
             for step_item in path["first_90_days"]:
                 st.markdown(esc(f"- {step_item}"))
@@ -1260,19 +1386,31 @@ def render_results():
 
     # 5. Three plans
     section(3, "Three possible plans")
+    fb = round_to(t["monthly_mid"] / 2, 500)
     tab_safe, tab_bal, tab_bold = st.tabs(["🛡️ Safe Plan", "⚖️ Balanced Plan", "🚀 Bold Plan"])
     with tab_safe:
         st.markdown("**Stable, lower-risk employment/training path. Prioritizes income reliability.**")
-        render_path_card(plans["safe"], "Safe plan — income reliability first", badge=("✓ Safe Plan", "green"))
+        render_path_card(plans["safe"], "Safe plan — income reliability first", badge=("✓ Safe Plan", "green"), fallback_monthly=fb)
     with tab_bal:
         st.markdown("**Practical income engine plus passion or entrepreneurship development. Often the best default.**")
-        render_path_card(plans["balanced"], "Balanced plan — primary income engine", badge=("⚖ Balanced Plan", "blue"))
+        render_path_card(plans["balanced"], "Balanced plan — primary income engine", badge=("⚖ Balanced Plan", "blue"), fallback_monthly=fb)
         if plans["side"]:
             st.markdown("**…paired with a development track you actually care about:**")
-            render_path_card(plans["side"], "Balanced plan — side development track", badge=("Side track", "grey"))
+            render_path_card(plans["side"], "Balanced plan — side development track", badge=("Side track", "grey"), fallback_monthly=fb)
+        if plans.get("upskill"):
+            up = plans["upskill"]["path"]
+            st.markdown("**…and a skill-building step first** — low current income with no anchored skill "
+                        "usually means the credential comes before the career:")
+            with st.container(border=True):
+                st.markdown(pill("Upskilling step", "grey"), unsafe_allow_html=True)
+                st.markdown(f"#### {up['name']}")
+                st.markdown(esc(up["training_required"]))
+                st.markdown(esc("**First moves:** " + " · ".join(up["first_90_days"][:2])))
+                if up.get("warnings"):
+                    st.caption(esc("⚠️ " + up["warnings"][0]))
     with tab_bold:
         st.markdown("**Entrepreneurship-first or dream-first route. Higher ceiling, weaker floor.**")
-        render_path_card(plans["bold"], "Bold plan — higher risk, higher ownership", badge=("↑ Bold Plan", "amber"))
+        render_path_card(plans["bold"], "Bold plan — higher risk, higher ownership", badge=("↑ Bold Plan", "amber"), fallback_monthly=fb)
         savings_now = int(p.get("savings") or 0)
         runway = savings_now / t["monthly_mid"] if t["monthly_mid"] else 0
         need = t["monthly_mid"] * 6
@@ -1421,6 +1559,11 @@ def render_results():
                 st.markdown(esc(body))
 
     st.divider()
+    st.caption(
+        "Salary ranges and job market signals are prototype estimates for Calgary/Alberta and should be "
+        "treated as directional planning assumptions, not guarantees. Future versions should connect to "
+        "maintained wage and labour-market data sources."
+    )
     panel(DISCLAIMER)
     c1, c2 = st.columns(2)
     if c1.button("← Adjust my answers"):

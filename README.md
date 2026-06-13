@@ -32,7 +32,8 @@ straight to a fully-populated results page.
 | `app.py` | Interview flow, budget engine, gross-up, pathway scoring, plan builder, UI |
 | `data/cost_assumptions.json` | Every monthly cost tier + per-city housing tables and everyday-cost factors + misc buffer % |
 | `data/tax_assumptions.json` | Tiered net-ratio gross-up model + uncertainty band |
-| `data/career_paths.json` | 88 career/pathway cards across 8 categories (the heart of the tool) |
+| `data/career_paths.json` | ~400 career/pathway cards across 23 career families (the heart of the tool) |
+| `scripts/validate_career_data.py` | Run after any hand-edit of the career data — schema/enum/income checks |
 | `data/questionnaire_options.json` | Dropdown options, skill→category mappings, lifestyle-level derivations, readiness levels |
 
 No database, no login, no admin panel, no external API calls — by design for v1. All data access in
@@ -47,10 +48,13 @@ No database, no login, no admin panel, no external API calls — by design for v
 - `business_potential`, `freelance_potential`, `ai_exposure_level`, `ai_leverage_potential`: `Low | Medium | High | Very High`
 - `job_market_signal`: `Hot | Warm | Balanced | Cool | Cold` (Alberta ALIS-style)
 
-Two fields were added beyond the original spec to make scoring possible:
-`time_to_income_years {min,max}` (machine-readable timeframe fit) and `sales_requirement`
-(sales-comfort fit). `tenant_insurance` and `health_personal` were similarly added to the cost file
-so the budget covers the full category list.
+Fields added beyond the original spec to make scoring possible: `time_to_income_years {min,max}`,
+`sales_requirement`, and (from the career-library addendum) `career_family` (23 slugs),
+`pathway_type` (11 types), `income_predictability` (`low|medium|high`), and `warnings[]`.
+Deliberate deviation from the addendum: we kept `income_range_cad {entry,mid,experienced}` and the
+prose `time_to_income`/`training_required` fields instead of renaming/enum-ifying them — same
+information, no breakage of the original records. `tenant_insurance` and `health_personal` were
+similarly added to the cost file so the budget covers the full category list.
 
 ## How the engine works (short version)
 
@@ -63,6 +67,12 @@ so the budget covers the full category list.
    disruption, Alberta market signal, and skill/field alignment. Weights live in `score_path()`.
 4. **Plans** — Safe = top low-risk stable path; Balanced = best practical income engine (+ a passion/
    business side track); Bold = top entrepreneurship/dream path with runway math and a fallback trigger.
+5. **Diversity rules** (career-library addendum) — one career family per top-3 slot (two when the user
+   explicitly leans that way); generic project management and AI-titled paths require fit signals;
+   passion paths only appear beside a pragmatic engine when a dream is expressed; entrepreneurship
+   requires sales/uncertainty fit; a hands-on path is guaranteed when the user is open to one; a
+   practical earner is guaranteed for high-income targets; an upskilling step appears when there is
+   no marketable skill anchored yet; high-risk/low-predictability picks carry a fallback trigger.
 
 ## Known limitations
 

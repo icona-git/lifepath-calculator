@@ -1,43 +1,185 @@
 {
-  "age_ranges": ["16-19", "20-24", "25-29", "30-34", "35-44", "45-54", "55+"],
-  "alberta_cities": ["Calgary", "Edmonton", "Red Deer", "Lethbridge", "Medicine Hat", "Fort McMurray", "Grande Prairie", "Smaller town / rural Alberta", "Outside Alberta / other"],
-  "housing_now": ["Living with family", "Renting - shared with roommates", "Renting - own place", "Own my home", "Other"],
-  "education_levels": ["High school or less", "Some post-secondary", "Certificate or diploma", "Trade ticket / apprenticeship", "Bachelor's degree", "Graduate degree"],
-  "work_status": ["Working full-time", "Working part-time", "Gig / contract work", "Student", "Between jobs", "Caregiving / other"],
-  "support_levels": ["Living at home / strong family support", "Some support (partner or family)", "Fully independent / no support"],
+  "age_ranges": [
+    "16-19",
+    "20-24",
+    "25-29",
+    "30-34",
+    "35-44",
+    "45-54",
+    "55+"
+  ],
+  "alberta_cities": [
+    "Calgary",
+    "Edmonton",
+    "Red Deer",
+    "Lethbridge",
+    "Medicine Hat",
+    "Fort McMurray",
+    "Grande Prairie",
+    "Smaller town / rural Alberta",
+    "Outside Alberta / other"
+  ],
+  "housing_now": [
+    "Living with family",
+    "Renting - shared with roommates",
+    "Renting - own place",
+    "Own my home",
+    "Other"
+  ],
+  "education_levels": [
+    "High school or less",
+    "Some post-secondary",
+    "Certificate or diploma",
+    "Trade ticket / apprenticeship",
+    "Bachelor's degree",
+    "Graduate degree"
+  ],
+  "work_status": [
+    "Working full-time",
+    "Working part-time",
+    "Gig / contract work",
+    "Student",
+    "Between jobs",
+    "Caregiving / other"
+  ],
+  "support_levels": [
+    "Living at home / strong family support",
+    "Some support (partner or family)",
+    "Fully independent / no support"
+  ],
   "current_fields": {
-    "Technology / IT": ["Technology"],
-    "Trades / construction / mechanical": ["Trades & Technical"],
-    "Business / admin / sales / marketing": ["Business, Sales & Operations"],
-    "Creative / arts / music / media": ["Creative & Passion"],
-    "Healthcare / care work": ["Healthcare & Care Work"],
-    "Public sector / education / emergency services": ["Public Sector & Stability"],
-    "Service / hospitality / retail": [],
+    "Technology / IT": [
+      "technical"
+    ],
+    "Trades / construction / mechanical": [
+      "trades",
+      "construction",
+      "manufacturing"
+    ],
+    "Business / admin / sales / marketing": [
+      "sales",
+      "admin",
+      "finance",
+      "logistics"
+    ],
+    "Creative / arts / music / media": [
+      "creative",
+      "media"
+    ],
+    "Healthcare / care work": [
+      "health"
+    ],
+    "Public sector / education / emergency services": [
+      "public_sector",
+      "education",
+      "security"
+    ],
+    "Service / hospitality / retail": [
+      "hospitality",
+      "service_business"
+    ],
     "Other / no field yet": []
   },
   "skills": {
-    "Customer service": ["Business, Sales & Operations"],
-    "Sales / persuasion": ["Business, Sales & Operations", "Freelance & Self-Employment"],
-    "Coding / software": ["Technology", "AI-Era Entrepreneurship"],
-    "Writing": ["Creative & Passion", "AI-Era Entrepreneurship"],
-    "Design / visual": ["Creative & Passion", "Freelance & Self-Employment"],
-    "Music / audio": ["Creative & Passion"],
-    "Video / photography": ["Creative & Passion", "Freelance & Self-Employment"],
-    "Hands-on / mechanical": ["Trades & Technical"],
-    "Driving / equipment": ["Trades & Technical", "Public Sector & Stability"],
-    "Organization / planning": ["Business, Sales & Operations", "Public Sector & Stability"],
-    "Teaching / coaching": ["Public Sector & Stability", "Freelance & Self-Employment"],
-    "Caregiving / health": ["Healthcare & Care Work"],
-    "Numbers / analysis": ["Technology", "Business, Sales & Operations"],
-    "AI tools / automation": ["AI-Era Entrepreneurship", "Technology"]
+    "Customer service": [
+      "sales",
+      "hospitality",
+      "service_business"
+    ],
+    "Sales / persuasion": [
+      "sales",
+      "entrepreneurship"
+    ],
+    "Coding / software": [
+      "technical"
+    ],
+    "Writing": [
+      "media",
+      "creative"
+    ],
+    "Design / visual": [
+      "creative",
+      "media"
+    ],
+    "Music / audio": [
+      "creative"
+    ],
+    "Video / photography": [
+      "creative",
+      "media"
+    ],
+    "Hands-on / mechanical": [
+      "trades",
+      "construction",
+      "manufacturing"
+    ],
+    "Driving / equipment": [
+      "transport",
+      "energy",
+      "agriculture"
+    ],
+    "Organization / planning": [
+      "admin",
+      "logistics",
+      "public_sector"
+    ],
+    "Teaching / coaching": [
+      "education"
+    ],
+    "Caregiving / health": [
+      "health"
+    ],
+    "Numbers / analysis": [
+      "finance",
+      "science",
+      "technical"
+    ],
+    "AI tools / automation": [
+      "technical"
+    ]
   },
-  "timeframes": { "2 years": 2, "5 years": 5, "10 years": 10, "Custom": null },
+  "timeframes": {
+    "2 years": 2,
+    "5 years": 5,
+    "10 years": 10,
+    "Custom": null
+  },
   "lifestyle_levels": {
-    "Bare minimum": { "food": "lean", "utilities": "shared_or_basic", "phone": "basic", "lifestyle": "lean", "health": "lean" },
-    "Functional but tight": { "food": "standard", "utilities": "standard", "phone": "basic", "lifestyle": "lean", "health": "lean" },
-    "Stable and realistic": { "food": "standard", "utilities": "standard", "phone": "standard", "lifestyle": "standard", "health": "standard" },
-    "Comfortable": { "food": "comfortable", "utilities": "comfortable", "phone": "standard", "lifestyle": "comfortable", "health": "comfortable" },
-    "High-cost lifestyle": { "food": "comfortable", "utilities": "comfortable", "phone": "premium", "lifestyle": "high", "health": "comfortable" }
+    "Bare minimum": {
+      "food": "lean",
+      "utilities": "shared_or_basic",
+      "phone": "basic",
+      "lifestyle": "lean",
+      "health": "lean"
+    },
+    "Functional but tight": {
+      "food": "standard",
+      "utilities": "standard",
+      "phone": "basic",
+      "lifestyle": "lean",
+      "health": "lean"
+    },
+    "Stable and realistic": {
+      "food": "standard",
+      "utilities": "standard",
+      "phone": "standard",
+      "lifestyle": "standard",
+      "health": "standard"
+    },
+    "Comfortable": {
+      "food": "comfortable",
+      "utilities": "comfortable",
+      "phone": "standard",
+      "lifestyle": "comfortable",
+      "health": "comfortable"
+    },
+    "High-cost lifestyle": {
+      "food": "comfortable",
+      "utilities": "comfortable",
+      "phone": "premium",
+      "lifestyle": "high",
+      "health": "comfortable"
+    }
   },
   "travel_labels": {
     "none": "No travel",
@@ -62,36 +204,140 @@
     "business_school": "Business / entrepreneurship education",
     "self_directed": "Self-directed learning path"
   },
-  "levels3": ["Low", "Medium", "High"],
-  "income_speed": ["Yes - I need income soon", "Somewhat - within a year or two", "No - I can invest time first"],
-  "business_interest": ["No / not now", "Curious", "Yes - strongly interested"],
-  "creative_interests": ["None / not a focus", "Music / performance", "Visual art / illustration", "Content creation / video", "Writing", "Photography / film", "Design", "Other creative pursuit"],
-  "balance": ["Push hard for income", "Balanced", "Protect time and wellbeing"],
+  "levels3": [
+    "Low",
+    "Medium",
+    "High"
+  ],
+  "income_speed": [
+    "Yes - I need income soon",
+    "Somewhat - within a year or two",
+    "No - I can invest time first"
+  ],
+  "business_interest": [
+    "No / not now",
+    "Curious",
+    "Yes - strongly interested"
+  ],
+  "creative_interests": [
+    "None / not a focus",
+    "Music / performance",
+    "Visual art / illustration",
+    "Content creation / video",
+    "Writing",
+    "Photography / film",
+    "Design",
+    "Other creative pursuit"
+  ],
+  "balance": [
+    "Push hard for income",
+    "Balanced",
+    "Protect time and wellbeing"
+  ],
   "workstyle_questions": [
-    { "key": "risk_tolerance", "label": "Risk tolerance", "help": "How much income uncertainty can you live with?" },
-    { "key": "study_willingness", "label": "Willingness to study", "help": "Courses, certifications, school" },
-    { "key": "evenings_weekends", "label": "Willing to work evenings/weekends", "help": "" },
-    { "key": "structure_pref", "label": "Preference for structure", "help": "Clear hours, clear instructions, steady employer" },
-    { "key": "autonomy_pref", "label": "Preference for autonomy", "help": "Choosing your own work and schedule" },
-    { "key": "sales_comfort", "label": "Comfort with sales", "help": "Pitching, self-promotion, asking for money" },
-    { "key": "uncertainty_comfort", "label": "Comfort with uncertainty", "help": "Variable income, ambiguous problems" },
-    { "key": "ai_interest", "label": "Interest in AI tools", "help": "" },
-    { "key": "ent_interest", "label": "Interest in entrepreneurship", "help": "" },
-    { "key": "stable_interest", "label": "Interest in stable employment", "help": "" },
-    { "key": "freelance_interest", "label": "Interest in freelance work", "help": "" },
-    { "key": "trades_interest", "label": "Interest in trades", "help": "" },
-    { "key": "creative_interest_ws", "label": "Interest in creative/passion work", "help": "" }
+    {
+      "key": "risk_tolerance",
+      "label": "Risk tolerance",
+      "help": "How much income uncertainty can you live with?"
+    },
+    {
+      "key": "study_willingness",
+      "label": "Willingness to study",
+      "help": "Courses, certifications, school"
+    },
+    {
+      "key": "evenings_weekends",
+      "label": "Willing to work evenings/weekends",
+      "help": ""
+    },
+    {
+      "key": "structure_pref",
+      "label": "Preference for structure",
+      "help": "Clear hours, clear instructions, steady employer"
+    },
+    {
+      "key": "autonomy_pref",
+      "label": "Preference for autonomy",
+      "help": "Choosing your own work and schedule"
+    },
+    {
+      "key": "sales_comfort",
+      "label": "Comfort with sales",
+      "help": "Pitching, self-promotion, asking for money"
+    },
+    {
+      "key": "uncertainty_comfort",
+      "label": "Comfort with uncertainty",
+      "help": "Variable income, ambiguous problems"
+    },
+    {
+      "key": "ai_interest",
+      "label": "Interest in AI tools",
+      "help": ""
+    },
+    {
+      "key": "ent_interest",
+      "label": "Interest in entrepreneurship",
+      "help": ""
+    },
+    {
+      "key": "stable_interest",
+      "label": "Interest in stable employment",
+      "help": ""
+    },
+    {
+      "key": "freelance_interest",
+      "label": "Interest in freelance work",
+      "help": ""
+    },
+    {
+      "key": "trades_interest",
+      "label": "Interest in trades",
+      "help": ""
+    },
+    {
+      "key": "creative_interest_ws",
+      "label": "Interest in creative/passion work",
+      "help": ""
+    }
   ],
   "ent_questions": [
-    { "key": "sales", "label": "Are you willing to learn sales?" },
-    { "key": "accounting", "label": "Are you willing to learn basic accounting?" },
-    { "key": "marketing", "label": "Are you willing to learn marketing?" },
-    { "key": "customers", "label": "Are you willing to talk to customers?" },
-    { "key": "rejection", "label": "Are you willing to be rejected - sometimes often?" },
-    { "key": "paid_skill", "label": "Do you have a skill people already pay for?" },
-    { "key": "runway", "label": "Do you have savings/runway (or a plan to build it)?" },
-    { "key": "start_small", "label": "Are you willing to start small?" },
-    { "key": "training", "label": "Are you willing to take business classes or structured training?" }
+    {
+      "key": "sales",
+      "label": "Are you willing to learn sales?"
+    },
+    {
+      "key": "accounting",
+      "label": "Are you willing to learn basic accounting?"
+    },
+    {
+      "key": "marketing",
+      "label": "Are you willing to learn marketing?"
+    },
+    {
+      "key": "customers",
+      "label": "Are you willing to talk to customers?"
+    },
+    {
+      "key": "rejection",
+      "label": "Are you willing to be rejected - sometimes often?"
+    },
+    {
+      "key": "paid_skill",
+      "label": "Do you have a skill people already pay for?"
+    },
+    {
+      "key": "runway",
+      "label": "Do you have savings/runway (or a plan to build it)?"
+    },
+    {
+      "key": "start_small",
+      "label": "Are you willing to start small?"
+    },
+    {
+      "key": "training",
+      "label": "Are you willing to take business classes or structured training?"
+    }
   ],
   "readiness_levels": [
     "Not ready yet",
