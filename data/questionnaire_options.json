@@ -237,68 +237,33 @@
   "workstyle_questions": [
     {
       "key": "risk_tolerance",
-      "label": "Risk tolerance",
-      "help": "How much income uncertainty can you live with?"
+      "label": "Comfort with risk and uncertainty",
+      "help": "Variable income, ambiguous problems, no guarantees"
     },
     {
       "key": "study_willingness",
-      "label": "Willingness to study",
-      "help": "Courses, certifications, school"
-    },
-    {
-      "key": "evenings_weekends",
-      "label": "Willing to work evenings/weekends",
-      "help": ""
+      "label": "Willingness to do more schooling or training",
+      "help": "Courses, certificates, apprenticeship, or a degree"
     },
     {
       "key": "structure_pref",
-      "label": "Preference for structure",
-      "help": "Clear hours, clear instructions, steady employer"
-    },
-    {
-      "key": "autonomy_pref",
-      "label": "Preference for autonomy",
-      "help": "Choosing your own work and schedule"
+      "label": "Preference for structure vs. autonomy",
+      "help": "High = steady hours and clear direction · Low = set your own path"
     },
     {
       "key": "sales_comfort",
-      "label": "Comfort with sales",
-      "help": "Pitching, self-promotion, asking for money"
-    },
-    {
-      "key": "uncertainty_comfort",
-      "label": "Comfort with uncertainty",
-      "help": "Variable income, ambiguous problems"
+      "label": "Comfort with sales and self-promotion",
+      "help": "Pitching, networking, asking for the sale"
     },
     {
       "key": "ai_interest",
-      "label": "Interest in AI tools",
-      "help": ""
-    },
-    {
-      "key": "ent_interest",
-      "label": "Interest in entrepreneurship",
-      "help": ""
-    },
-    {
-      "key": "stable_interest",
-      "label": "Interest in stable employment",
-      "help": ""
-    },
-    {
-      "key": "freelance_interest",
-      "label": "Interest in freelance work",
-      "help": ""
+      "label": "Interest in using AI tools",
+      "help": "Willingness to learn AI as leverage in your work"
     },
     {
       "key": "trades_interest",
-      "label": "Interest in trades",
-      "help": ""
-    },
-    {
-      "key": "creative_interest_ws",
-      "label": "Interest in creative/passion work",
-      "help": ""
+      "label": "Interest in hands-on or trades work",
+      "help": "Physical, practical, build/fix/operate work"
     }
   ],
   "ent_questions": [

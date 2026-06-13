@@ -30,7 +30,7 @@ straight to a fully-populated results page.
 | File | What it controls |
 |---|---|
 | `app.py` | Interview flow, budget engine, gross-up, pathway scoring, plan builder, UI |
-| `data/cost_assumptions.json` | Every monthly cost tier + per-city housing tables and everyday-cost factors + misc buffer % |
+| `data/cost_assumptions.json` | Every monthly cost tier + per-city housing tables (15 tiers: rent + ownership across dwelling types) + everyday-cost factors + misc buffer % |
 | `data/tax_assumptions.json` | Tiered net-ratio gross-up model + uncertainty band |
 | `data/career_paths.json` | ~400 career/pathway cards across 23 career families (the heart of the tool) |
 | `scripts/validate_career_data.py` | Run after any hand-edit of the career data — schema/enum/income checks |
@@ -59,8 +59,10 @@ similarly added to the cost file so the budget covers the full category list.
 ## How the engine works (short version)
 
 1. **Budget** — tier choices map to monthly line items; housing comes from the target city's table
-   and food/utilities/lifestyle/health scale by the city's `everyday_factor`; +10% misc buffer;
-   presented as a ±7% range to avoid false precision.
+   (15 options from "living with family" through rented apartments/townhouses/houses to owned
+   condos/townhouses/detached/acreage; ownership figures bundle mortgage + tax + insurance + maintenance,
+   and utilities scale with dwelling size); food/utilities/lifestyle/health scale by the city's
+   `everyday_factor`; +10% misc buffer; presented as a ±7% range to avoid false precision.
 2. **Gross-up** — annual after-tax need → tiered net-ratio estimate (`tax_assumptions.json`) ± 8%.
 3. **Scoring** — every path scored on income fit, timeframe, risk tolerance, study willingness,
    structure/autonomy, sales comfort, entrepreneurship/creative/AI interest, income urgency vs AI
@@ -73,11 +75,23 @@ similarly added to the cost file so the budget covers the full category list.
    requires sales/uncertainty fit; a hands-on path is guaranteed when the user is open to one; a
    practical earner is guaranteed for high-income targets; an upskilling step appears when there is
    no marketable skill anchored yet; high-risk/low-predictability picks carry a fallback trigger.
+6. **School vs. no-school** — `needs_schooling()` splits paths into "startable now" vs "opens up with
+   training" (apprenticeships count as training). A "no more school" answer (`study_willingness = Low`)
+   filters the three plans to no-school paths; results always show both worlds side by side plus a gap
+   reframe ("without training your fitting ceiling is ~$X; training reaches ~$Y vs your ~$Z target").
+
+## Questionnaire (kept deliberately lean)
+
+~37 inputs across 5 steps. Step 4 collects **6 work-style sliders** (comfort with risk/uncertainty,
+willingness to study, structure↔autonomy, sales comfort, AI interest, hands-on interest); the engine
+derives the wider signal set it needs in `normalize_profile()`. Entrepreneurship and creative interest
+are each asked once (Step 2), not duplicated as sliders.
 
 ## Known limitations
 
 - Tax model is deliberately rough (no CPP/EI/credit detail, no self-employment distinction).
-- City housing tables and everyday factors are directional mid-2026 estimates; "Outside Alberta"
+- City housing tables and everyday factors are directional mid-2026 estimates; ownership all-in costs
+  scale by each city's rent multiplier (not a separate house-price model) and "Outside Alberta"
   falls back to Calgary-baseline costs.
 - Career incomes are Alberta-wide and the ALIS-style market signals are provincial — neither is
   city-specific, and both are editorial judgment for the prototype, not live data.

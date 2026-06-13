@@ -4,58 +4,226 @@
   "last_updated": "2026-06-12",
   "disclaimer": "Prototype planning assumptions, not verified quotes. Edit this file to change every cost in the app. City housing figures and everyday factors are directional mid-2026 estimates.",
   "housing_labels": {
-    "family_support": "Living with family/support contribution",
-    "shared": "Shared apartment/roommates",
-    "basic_private": "Basic private apartment",
-    "stable_one_bedroom": "Stable one-bedroom apartment",
-    "comfortable": "Comfortable one-bedroom or modest two-bedroom",
-    "premium": "Premium/luxury rental"
+    "family_support": "Living with family / support contribution",
+    "shared": "Room / shared apartment (roommates)",
+    "studio": "Bachelor / studio apartment (rent)",
+    "basic_private": "Basic 1-bedroom apartment (rent)",
+    "stable_one_bedroom": "Stable 1-bedroom apartment (rent)",
+    "comfortable": "2-bedroom apartment (rent)",
+    "rented_townhouse": "Townhouse (rent)",
+    "rented_house": "Detached house (rent)",
+    "premium": "Premium / luxury rental",
+    "own_condo": "Condo / apartment (own, mortgage + fees)",
+    "own_townhouse": "Townhouse (own)",
+    "own_house_starter": "Starter detached house (own)",
+    "own_house_comfortable": "Comfortable detached house (own)",
+    "own_house_premium": "Premium / large house (own)",
+    "acreage_rural": "Acreage / rural property (own)"
   },
   "cities": {
     "Calgary": {
       "everyday_factor": 1.0,
-      "housing": { "family_support": 500, "shared": 950, "basic_private": 1350, "stable_one_bedroom": 1650, "comfortable": 2100, "premium": 2800 }
+      "housing": {
+        "family_support": 500,
+        "shared": 950,
+        "studio": 1200,
+        "basic_private": 1350,
+        "stable_one_bedroom": 1650,
+        "comfortable": 2100,
+        "rented_townhouse": 2400,
+        "rented_house": 2900,
+        "premium": 2800,
+        "own_condo": 2350,
+        "own_townhouse": 2950,
+        "own_house_starter": 3500,
+        "own_house_comfortable": 4400,
+        "own_house_premium": 6000,
+        "acreage_rural": 4200
+      }
     },
     "Edmonton": {
       "everyday_factor": 0.97,
-      "housing": { "family_support": 450, "shared": 800, "basic_private": 1150, "stable_one_bedroom": 1400, "comfortable": 1800, "premium": 2400 }
+      "housing": {
+        "family_support": 450,
+        "shared": 800,
+        "studio": 1050,
+        "basic_private": 1150,
+        "stable_one_bedroom": 1400,
+        "comfortable": 1800,
+        "rented_townhouse": 2050,
+        "rented_house": 2500,
+        "premium": 2400,
+        "own_condo": 2000,
+        "own_townhouse": 2550,
+        "own_house_starter": 3000,
+        "own_house_comfortable": 3800,
+        "own_house_premium": 5150,
+        "acreage_rural": 3600
+      }
     },
     "Red Deer": {
       "everyday_factor": 0.95,
-      "housing": { "family_support": 400, "shared": 750, "basic_private": 1000, "stable_one_bedroom": 1200, "comfortable": 1550, "premium": 2000 }
+      "housing": {
+        "family_support": 400,
+        "shared": 750,
+        "studio": 900,
+        "basic_private": 1000,
+        "stable_one_bedroom": 1200,
+        "comfortable": 1550,
+        "rented_townhouse": 1800,
+        "rented_house": 2200,
+        "premium": 2000,
+        "own_condo": 1750,
+        "own_townhouse": 2200,
+        "own_house_starter": 2600,
+        "own_house_comfortable": 3300,
+        "own_house_premium": 4500,
+        "acreage_rural": 3150
+      }
     },
     "Lethbridge": {
       "everyday_factor": 0.94,
-      "housing": { "family_support": 400, "shared": 700, "basic_private": 950, "stable_one_bedroom": 1150, "comfortable": 1450, "premium": 1900 }
+      "housing": {
+        "family_support": 400,
+        "shared": 700,
+        "studio": 850,
+        "basic_private": 950,
+        "stable_one_bedroom": 1150,
+        "comfortable": 1450,
+        "rented_townhouse": 1750,
+        "rented_house": 2100,
+        "premium": 1900,
+        "own_condo": 1700,
+        "own_townhouse": 2100,
+        "own_house_starter": 2500,
+        "own_house_comfortable": 3150,
+        "own_house_premium": 4300,
+        "acreage_rural": 3000
+      }
     },
     "Medicine Hat": {
       "everyday_factor": 0.93,
-      "housing": { "family_support": 350, "shared": 650, "basic_private": 900, "stable_one_bedroom": 1050, "comfortable": 1350, "premium": 1750 }
+      "housing": {
+        "family_support": 350,
+        "shared": 650,
+        "studio": 800,
+        "basic_private": 900,
+        "stable_one_bedroom": 1050,
+        "comfortable": 1350,
+        "rented_townhouse": 1600,
+        "rented_house": 1900,
+        "premium": 1750,
+        "own_condo": 1550,
+        "own_townhouse": 1950,
+        "own_house_starter": 2300,
+        "own_house_comfortable": 2900,
+        "own_house_premium": 3950,
+        "acreage_rural": 2750
+      }
     },
     "Fort McMurray": {
       "everyday_factor": 1.08,
-      "housing": { "family_support": 550, "shared": 900, "basic_private": 1250, "stable_one_bedroom": 1450, "comfortable": 1850, "premium": 2500 }
+      "housing": {
+        "family_support": 550,
+        "shared": 900,
+        "studio": 1100,
+        "basic_private": 1250,
+        "stable_one_bedroom": 1450,
+        "comfortable": 1850,
+        "rented_townhouse": 2150,
+        "rented_house": 2600,
+        "premium": 2500,
+        "own_condo": 2100,
+        "own_townhouse": 2650,
+        "own_house_starter": 3150,
+        "own_house_comfortable": 3950,
+        "own_house_premium": 5400,
+        "acreage_rural": 3800
+      }
     },
     "Grande Prairie": {
       "everyday_factor": 1.0,
-      "housing": { "family_support": 450, "shared": 750, "basic_private": 1050, "stable_one_bedroom": 1250, "comfortable": 1600, "premium": 2100 }
+      "housing": {
+        "family_support": 450,
+        "shared": 750,
+        "studio": 900,
+        "basic_private": 1050,
+        "stable_one_bedroom": 1250,
+        "comfortable": 1600,
+        "rented_townhouse": 1850,
+        "rented_house": 2250,
+        "premium": 2100,
+        "own_condo": 1800,
+        "own_townhouse": 2250,
+        "own_house_starter": 2700,
+        "own_house_comfortable": 3400,
+        "own_house_premium": 4600,
+        "acreage_rural": 3250
+      }
     },
     "Smaller town / rural Alberta": {
       "everyday_factor": 0.93,
-      "housing": { "family_support": 350, "shared": 650, "basic_private": 850, "stable_one_bedroom": 1000, "comfortable": 1300, "premium": 1700 }
+      "housing": {
+        "family_support": 350,
+        "shared": 650,
+        "studio": 750,
+        "basic_private": 850,
+        "stable_one_bedroom": 1000,
+        "comfortable": 1300,
+        "rented_townhouse": 1500,
+        "rented_house": 1850,
+        "premium": 1700,
+        "own_condo": 1500,
+        "own_townhouse": 1850,
+        "own_house_starter": 2200,
+        "own_house_comfortable": 2750,
+        "own_house_premium": 3800,
+        "acreage_rural": 2650
+      }
     },
     "Outside Alberta / other": {
       "everyday_factor": 1.0,
-      "housing": { "family_support": 500, "shared": 950, "basic_private": 1350, "stable_one_bedroom": 1650, "comfortable": 2100, "premium": 2800 },
+      "housing": {
+        "family_support": 500,
+        "shared": 950,
+        "studio": 1200,
+        "basic_private": 1350,
+        "stable_one_bedroom": 1650,
+        "comfortable": 2100,
+        "rented_townhouse": 2400,
+        "rented_house": 2900,
+        "premium": 2800,
+        "own_condo": 2350,
+        "own_townhouse": 2950,
+        "own_house_starter": 3500,
+        "own_house_comfortable": 4400,
+        "own_house_premium": 6000,
+        "acreage_rural": 4200
+      },
       "note": "Falls back to Calgary-baseline costs; the prototype's data is Alberta-only."
     }
   },
   "vehicle": {
-    "none": { "monthly": 125, "label": "Transit/no car" },
-    "older_used": { "monthly": 550, "label": "Older used vehicle including insurance/fuel/maintenance" },
-    "reliable_used": { "monthly": 850, "label": "Reliable used vehicle including payment/insurance/fuel/maintenance" },
-    "newer_financed": { "monthly": 1150, "label": "Newer financed vehicle including payment/insurance/fuel/maintenance" },
-    "premium": { "monthly": 1650, "label": "Premium vehicle lifestyle" }
+    "none": {
+      "monthly": 125,
+      "label": "Transit/no car"
+    },
+    "older_used": {
+      "monthly": 550,
+      "label": "Older used vehicle including insurance/fuel/maintenance"
+    },
+    "reliable_used": {
+      "monthly": 850,
+      "label": "Reliable used vehicle including payment/insurance/fuel/maintenance"
+    },
+    "newer_financed": {
+      "monthly": 1150,
+      "label": "Newer financed vehicle including payment/insurance/fuel/maintenance"
+    },
+    "premium": {
+      "monthly": 1650,
+      "label": "Premium vehicle lifestyle"
+    }
   },
   "food": {
     "lean": 450,
@@ -114,5 +282,19 @@
     "business_school": 900,
     "self_directed": 150
   },
-  "misc_buffer_percent": 0.10
+  "misc_buffer_percent": 0.1,
+  "housing_utility_multiplier": {
+    "studio": 0.9,
+    "basic_private": 1.0,
+    "stable_one_bedroom": 1.0,
+    "comfortable": 1.1,
+    "rented_townhouse": 1.3,
+    "own_condo": 1.2,
+    "own_townhouse": 1.3,
+    "rented_house": 1.6,
+    "own_house_starter": 1.6,
+    "own_house_comfortable": 1.8,
+    "own_house_premium": 2.1,
+    "acreage_rural": 2.2
+  }
 }

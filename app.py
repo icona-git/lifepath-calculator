@@ -61,6 +61,21 @@ def is_hands_on(path):
     return fam(path) in HANDS_ON_FAMILIES or ptype(path) in HANDS_ON_TYPES
 
 
+def needs_schooling(path):
+    """True if the path realistically requires significant NEW schooling/training
+    to enter — used for the school/no-school two-tier reveal and to honour a
+    'no more school' preference. Apprenticeships count (registered multi-year
+    training, even if earn-while-you-learn); cheap certificates and
+    experience-based entry count as no-school."""
+    if ptype(path) == "apprenticeship":
+        return True
+    if path.get("training_cost_level") == "High":
+        return True
+    if ptype(path) in ("credentialled_path", "regulated") and path.get("training_cost_level") in ("Medium", "High"):
+        return True
+    return False
+
+
 # --------------------------------------------------------------------------
 # Data access — single seam to swap JSON files for a database/admin later
 # --------------------------------------------------------------------------
@@ -134,6 +149,7 @@ def compute_budget(p):
     vehicle = C["vehicle"][p["vehicle_tier"]]["monthly"]
     food = int(round(C["food"][level["food"]] * fac))
 
+    owned = housing_tier.startswith("own_") or housing_tier == "acreage_rural"
     if housing_tier == "family_support":
         utilities = 0
         utilities_note = "Assumed included in family contribution"
@@ -141,12 +157,14 @@ def compute_budget(p):
         utilities = int(round(C["utilities"]["shared_or_basic"] * fac))
         utilities_note = "Split with roommates"
     else:
-        utilities = int(round(C["utilities"][level["utilities"]] * fac))
-        utilities_note = ""
+        hum = C.get("housing_utility_multiplier", {}).get(housing_tier, 1.0)
+        utilities = int(round(C["utilities"][level["utilities"]] * fac * hum))
+        utilities_note = "Whole-home utilities" if hum >= 1.5 else ""
 
     phone = C["phone"][level["phone"]]
     internet = C["internet"]["shared"] if housing_tier in ("family_support", "shared") else C["internet"]["standard"]
-    tenant_ins = 0 if housing_tier == "family_support" else C["tenant_insurance"]["renting"]
+    # Owned-home insurance is already bundled into the all-in housing figure; renters add tenant insurance.
+    tenant_ins = 0 if (housing_tier == "family_support" or owned) else C["tenant_insurance"]["renting"]
     health = int(round(C["health_personal"][level["health"]] * fac))
     lifestyle = int(round(C["lifestyle"][level["lifestyle"]] * fac))
     travel = C["travel"][p["travel_tier"]]
@@ -431,6 +449,14 @@ def build_plans(ranked, ctx):
     used_ids = set()
     fam_count = {}
 
+    def school_ok(pool):
+        """When the user wants no more schooling, prefer no-school paths but
+        never empty a pool — fall back to the full pool if nothing qualifies."""
+        if not ctx.get("avoid_school"):
+            return pool
+        no_school = [x for x in pool if not needs_schooling(x["path"])]
+        return no_school if no_school else pool
+
     def pick(pool, cap_exempt=False):
         for x in pool:
             f = fam(x["path"])
@@ -467,7 +493,7 @@ def build_plans(ranked, ctx):
     if not safe_pool:
         safe_pool = [x for x in career_ranked
                      if ptype(x["path"]) in STABLE_TYPES and x["path"]["risk_level"] != "High"]
-    safe = take(pick(safe_pool) or pick(career_ranked) or pick_any(career_ranked))
+    safe = take(pick(school_ok(safe_pool)) or pick(school_ok(career_ranked)) or pick_any(career_ranked))
 
     # Bold: self-employment / high-upside; creative only with a dream signal (rule 8)
     if has_dream_signal(p):
@@ -480,17 +506,17 @@ def build_plans(ranked, ctx):
                      if (ptype(x["path"]) in SELF_EMP_TYPES
                          or x["path"]["business_potential"] == "Very High")
                      and fam(x["path"]) != "creative"]
-    bold = take(pick(bold_pool) or pick(career_ranked) or pick_any(career_ranked))
+    bold = take(pick(school_ok(bold_pool)) or pick(school_ok(career_ranked)) or pick_any(career_ranked))
 
     # Balanced: best remaining practical income engine
     bal_pool = [x for x in career_ranked
                 if x["path"]["risk_level"] != "High"
                 and x["path"]["income_range_cad"]["mid"] >= ctx["req_gross"] * 0.8]
-    balanced = take(pick(bal_pool) or pick(career_ranked) or pick_any(career_ranked))
+    balanced = take(pick(school_ok(bal_pool)) or pick(school_ok(career_ranked)) or pick_any(career_ranked))
 
     # Rule 5: if the user is open to hands-on work, at least one pick must be hands-on
     if ctx["hands_on_open"] and not any(is_hands_on(x["path"]) for x in (safe, balanced, bold) if x):
-        ho = pick([x for x in career_ranked if is_hands_on(x["path"])], cap_exempt=True)
+        ho = pick(school_ok([x for x in career_ranked if is_hands_on(x["path"])]), cap_exempt=True)
         if ho:
             if safe and ptype(ho["path"]) in STABLE_TYPES:
                 untake(safe)
@@ -502,9 +528,9 @@ def build_plans(ranked, ctx):
     # Rule 6: a high-income target needs at least one path that actually reaches it
     if ctx["req_gross"] >= 90000 and balanced and not any(
             x["path"]["income_range_cad"]["mid"] >= ctx["req_gross"] * 0.9 for x in (safe, balanced, bold) if x):
-        cand = pick([x for x in career_ranked
+        cand = pick(school_ok([x for x in career_ranked
                      if x["path"]["income_range_cad"]["mid"] >= ctx["req_gross"] * 0.9
-                     and x["path"].get("income_predictability", "medium") != "low"], cap_exempt=True)
+                     and x["path"].get("income_predictability", "medium") != "low"]), cap_exempt=True)
         if cand:
             untake(balanced)
             balanced = take(cand)
@@ -734,10 +760,74 @@ def build_roadmap(plans):
 
 
 # --------------------------------------------------------------------------
+# Profile normalization — the questionnaire now collects 6 work-style sliders
+# plus the Step-2 interest questions; the scoring engine reads a wider set of
+# signals, so we DERIVE the rest here. setdefault means an explicitly-set value
+# (e.g. in a sample profile) always wins over the derived one.
+# --------------------------------------------------------------------------
+
+_INV_LEVEL = {"Low": "High", "Medium": "Medium", "High": "Low"}
+_ENT_FROM_BIZ = {"No / not now": "Low", "Curious": "Medium", "Yes - strongly interested": "High"}
+
+
+def normalize_profile(p):
+    risk = p.get("risk_tolerance", "Medium")
+    structure = p.get("structure_pref", "Medium")
+    # risk_tolerance now also stands in for comfort-with-uncertainty
+    p.setdefault("uncertainty_comfort", risk)
+    # one structure↔autonomy axis: high structure ⇒ low autonomy, and vice-versa
+    p.setdefault("autonomy_pref", _INV_LEVEL.get(structure, "Medium"))
+    p.setdefault("stable_interest", "High" if (structure == "High" or risk == "Low")
+                 else "Low" if structure == "Low" else "Medium")
+    p.setdefault("freelance_interest", "High" if structure == "Low"
+                 else "Low" if structure == "High" else "Medium")
+    # entrepreneurship interest comes from the single Step-2 business question
+    p.setdefault("ent_interest", _ENT_FROM_BIZ.get(p.get("business_interest", "No / not now"), "Low"))
+    # creative interest comes from the Step-2 dream dropdown
+    p.setdefault("creative_interest_ws",
+                 "Low" if p.get("creative_interest", "None / not a focus") == "None / not a focus" else "High")
+    return p
+
+
+# --------------------------------------------------------------------------
+# Engine: schooling two-worlds (C+D) — what's reachable now vs with training
+# --------------------------------------------------------------------------
+
+def schooling_analysis(p, ranked, t):
+    target = t["gross_mid"]
+    career = [x for x in ranked if ptype(x["path"]) != "stepping_stone"]
+    no_school = [x for x in career if not needs_schooling(x["path"])]
+    with_school = [x for x in career if needs_schooling(x["path"])]
+
+    def ceiling(items):
+        # realistic ceiling = best mid-income among the top fitting paths, not the global max
+        return max((x["path"]["income_range_cad"]["mid"] for x in items[:10]), default=0)
+
+    ns_ceiling, ws_ceiling = ceiling(no_school), ceiling(with_school)
+    if ns_ceiling >= target:
+        verdict = "reachable_no_school"
+    elif ws_ceiling >= target:
+        verdict = "school_closes_gap"
+    else:
+        verdict = "target_above_both"
+    return {
+        "avoid": p.get("study_willingness") == "Low",
+        "willing": p.get("study_willingness") == "High",
+        "target": target,
+        "no_school_top": no_school[:3],
+        "with_school_top": with_school[:3],
+        "no_school_ceiling": ns_ceiling,
+        "with_school_ceiling": ws_ceiling,
+        "verdict": verdict,
+    }
+
+
+# --------------------------------------------------------------------------
 # Engine: one entry point used by the results page (and smoke tests)
 # --------------------------------------------------------------------------
 
 def compute_results(p):
+    normalize_profile(p)
     t = compute_targets(p)
     O = options()
     yrs = p.get("timeframe_years") or O["timeframes"].get(p.get("timeframe_label", "5 years")) or 5
@@ -764,6 +854,7 @@ def compute_results(p):
         "no_pref": (not has_dream_signal(p) and not has_ent_signal(p)
                     and all(p.get(k) != "High" for k in ("trades_interest", "freelance_interest", "stable_interest"))),
         "current_income": int(p.get("current_income") or 0),
+        "avoid_school": p.get("study_willingness") == "Low",
     }
     ranked = rank_paths(ctx)
     plans = build_plans(ranked, ctx)
@@ -776,6 +867,7 @@ def compute_results(p):
         "plans": plans,
         "readiness": readiness,
         "dream": dream,
+        "schooling": schooling_analysis(p, ranked, t),
         "truths": hard_truths(p, t, plans, dream),
         "moves": next_moves(p, t, plans, readiness),
         "roadmap": build_roadmap(plans),
@@ -1122,25 +1214,21 @@ def step_current():
         with c2:
             income = st.number_input("Current gross annual income (CAD)", min_value=0, max_value=1_000_000,
                                      value=int(p.get("current_income", 0)), step=1000)
-            take_home = st.number_input("Current monthly take-home (optional)", min_value=0, max_value=50_000,
-                                        value=int(p.get("take_home_monthly", 0)), step=100)
             savings = st.number_input("Current savings (CAD)", min_value=0, max_value=10_000_000,
                                       value=int(p.get("savings", 0)), step=500)
-            debt_total = st.number_input("Current debt total (CAD)", min_value=0, max_value=10_000_000,
-                                         value=int(p.get("debt_total", 0)), step=500)
             debt_payment = st.number_input("Current monthly debt payment (CAD)", min_value=0, max_value=50_000,
-                                           value=int(p.get("debt_payment", 0)), step=25)
-        skills = st.multiselect("Your main skills today", list(O["skills"].keys()), default=p.get("skills", []))
-        field = st.selectbox("Current field or recent training", list(O["current_fields"].keys()),
-                             index=list(O["current_fields"].keys()).index(p.get("current_field", "Other / no field yet")))
+                                           value=int(p.get("debt_payment", 0)), step=25,
+                                           help="Just your monthly payment — it's added to the budget.")
+            skills = st.multiselect("Your main skills today", list(O["skills"].keys()), default=p.get("skills", []))
+            field = st.selectbox("Current field or recent training", list(O["current_fields"].keys()),
+                                 index=list(O["current_fields"].keys()).index(p.get("current_field", "Other / no field yet")))
 
         back, nxt = nav_buttons(0)
     if back or nxt:
         p.update({
             "age_range": age, "current_city": city, "housing_now": housing_now, "education_level": education,
             "work_status": work, "support_level": support, "current_income": income,
-            "take_home_monthly": take_home, "savings": savings, "debt_total": debt_total,
-            "debt_payment": debt_payment, "skills": skills, "current_field": field,
+            "savings": savings, "debt_payment": debt_payment, "skills": skills, "current_field": field,
         })
         go(0 if back else 2)
 
@@ -1264,7 +1352,8 @@ def step_workstyle():
         p["income_speed"] = speed
         if back:
             go(3)
-        ent_relevant = p.get("business_interest") != "No / not now" or values.get("ent_interest") in ("Medium", "High")
+        # Entrepreneurship interest now comes from the single Step-2 business question.
+        ent_relevant = p.get("business_interest") != "No / not now"
         p["ent_shown"] = bool(ent_relevant)
         go(5 if ent_relevant else 6)
 
@@ -1451,8 +1540,55 @@ def render_results():
             })
         st.dataframe(pd.DataFrame(rows), hide_index=True)
 
-    # 6. AI risk snapshot
-    section(4, "AI risk snapshot")
+    # 4. Schooling: two worlds (reachable now vs opens up with training)
+    sc = r["schooling"]
+    section(4, "Will more schooling change your options?")
+    tgt, ns, ws = money(sc["target"]), money(sc["no_school_ceiling"]), money(sc["with_school_ceiling"])
+    if sc["verdict"] == "reachable_no_school":
+        panel(f"Paths that fit you and need <b>little or no new schooling</b> can reach your ~{tgt} target "
+              f"(up to about {ns}). More training could lift the ceiling further (~{ws}), but it isn't required "
+              f"for the life you described.")
+    elif sc["verdict"] == "school_closes_gap":
+        gap = money(max(0, sc["target"] - sc["no_school_ceiling"]))
+        panel(f"Without more schooling, the paths that fit you top out around <b>{ns}</b> — about {gap} short of "
+              f"your ~{tgt} target. Investing in training opens paths reaching about <b>{ws}</b>, which would "
+              f"close that gap. The choice is yours; here's what each road looks like.")
+    else:
+        panel(f"Even with training, the paths that best fit you top out around <b>{ws}</b>, below your ~{tgt} "
+              f"target. Worth considering a leaner version of the lifestyle, a longer timeframe, or a "
+              f"higher-ceiling direction.")
+    if sc["avoid"]:
+        st.caption("You'd rather not take on more schooling — so your three plans above were built from the "
+                   "left-hand column. The right column shows what training *would* unlock, in case it shifts your thinking.")
+    elif sc["willing"]:
+        st.caption("You're open to more schooling, so your plans can draw from either column.")
+    else:
+        st.caption("You're somewhat open to schooling — both columns are realistic for you.")
+
+    sc1, sc2 = st.columns(2)
+    with sc1:
+        st.markdown("#### 🟢 Little or no new schooling")
+        st.caption("Start sooner — entry by experience, a short certificate, or on-the-job training.")
+        for x in sc["no_school_top"]:
+            path = x["path"]
+            with st.container(border=True):
+                st.markdown(f"**{path['name']}**")
+                st.caption(path["category"])
+                st.markdown(esc(f"{money(path['income_range_cad']['entry'])}–{money(path['income_range_cad']['experienced'])}"
+                                f" · {path['time_to_income']}"))
+    with sc2:
+        st.markdown("#### 🎓 Opens up with training")
+        st.caption("Needs a diploma, apprenticeship, licence, or degree first — higher ceiling, longer runway.")
+        for x in sc["with_school_top"]:
+            path = x["path"]
+            with st.container(border=True):
+                st.markdown(f"**{path['name']}**")
+                st.caption(path["category"])
+                st.markdown(esc(f"{money(path['income_range_cad']['entry'])}–{money(path['income_range_cad']['experienced'])}"
+                                f" · {path['training_required']}"))
+
+    # 5. AI risk snapshot
+    section(5, "AI risk snapshot")
     st.caption(AI_DISCLAIMER)
     snapshot = [plans["safe"], plans["balanced"]] + ([plans["side"]] if plans["side"] else []) + [plans["bold"]]
     seen = set()
@@ -1472,7 +1608,7 @@ def render_results():
     # 7. Dream path analysis
     if r["dream"]:
         d = r["dream"]
-        section(5, "Dream path analysis")
+        section(6, "Dream path analysis")
         st.caption(f"Your creative focus: {d['interest']}. The dream stays in the plan — it just gets economically tested.")
         t1, t2, t3 = st.tabs(["Direct dream path", "Passion + income path", "Entrepreneurial dream path"])
         with t1:
@@ -1507,7 +1643,7 @@ def render_results():
     # 8. Entrepreneurship readiness
     if r["readiness"].get("assessed"):
         rd = r["readiness"]
-        section(6, "Entrepreneurship readiness")
+        section(7, "Entrepreneurship readiness")
         st.markdown(f"**{rd['level']}** — you answered yes to {rd['yes_count']} of {rd['total']} readiness questions.")
         st.progress(rd["yes_count"] / rd["total"], text=f"{rd['yes_count']} of {rd['total']} readiness signals (indicator, not a control)")
         c1, c2 = st.columns(2)
@@ -1534,7 +1670,7 @@ def render_results():
         )
 
     # 9. Roadmap
-    section(7, "Your two-year roadmap")
+    section(8, "Your two-year roadmap")
     st.caption("Built from your Balanced plan — the default recommendation.")
     rc1, rc2, rc3 = st.columns(3)
     for col, title, items in ((rc1, "Next 90 days", r["roadmap"]["r90"]),
@@ -1548,13 +1684,13 @@ def render_results():
 
     # 10. Hard truths
     if r["truths"]:
-        section(8, "Hard truths")
+        section(9, "Hard truths")
         st.caption("Blunt on purpose. Constructive on purpose.")
         for truth in r["truths"]:
             st.markdown(esc(f"> {truth}"))
 
     # 11. Next 3 moves
-    section(9, "Your next 3 moves")
+    section(10, "Your next 3 moves")
     mv_cols = st.columns(3)
     for col, (title, body) in zip(mv_cols, r["moves"]):
         with col:
