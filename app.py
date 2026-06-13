@@ -742,7 +742,11 @@ def compute_results(p):
     O = options()
     yrs = p.get("timeframe_years") or O["timeframes"].get(p.get("timeframe_label", "5 years")) or 5
     aligned = aligned_families(p)
-    preferred = set(aligned)
+    # preferred_families relaxes the one-per-family top-3 cap to two — but only for
+    # families the user DELIBERATELY chose (rule 1: "unless the user explicitly chooses
+    # that family"). A merely skill-aligned family still ranks high via scoring (+12);
+    # it does not get to occupy two of the three headline slots.
+    preferred = set()
     if p.get("trades_interest") == "High":
         preferred |= {"trades", "construction"}
     if has_dream_signal(p):
